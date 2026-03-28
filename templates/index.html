@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FitCheck</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-card">
+        <p class="eyebrow">FitCheck MVP</p>
+        <h1>Score how well a student resume fits a job.</h1>
+        <p class="intro">
+          Paste a resume and a job description to get an evidence-based fit score across
+          Skills Match, Experience Relevance, Evidence Quality, and Role Specific Signals.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <form method="post" class="input-panel">
+          <div class="field">
+            <label for="resume_text">Resume</label>
+            <textarea id="resume_text" name="resume_text" required>{{ resume_text }}</textarea>
+          </div>
+          <div class="field">
+            <label for="job_description">Job Description</label>
+            <textarea id="job_description" name="job_description" required>{{ job_description }}</textarea>
+          </div>
+          <button type="submit" class="primary-button">Run FitCheck</button>
+        </form>
+
+        <section class="results-panel">
+          {% if result %}
+            <div class="score-card">
+              <p class="score-label">Overall Fit Score</p>
+              <div class="score-value">{{ result.overall_score }}</div>
+              <p class="score-scale">out of 100</p>
+            </div>
+
+            <div class="requirement-card">
+              <h2>Top Job Signals</h2>
+              <div class="chip-row">
+                {% for requirement in result.top_requirements %}
+                  <span class="chip">{{ requirement }}</span>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="category-grid">
+              {% for category in result.categories %}
+                <article class="category-card">
+                  <div class="category-topline">
+                    <h3>{{ category.label }}</h3>
+                    <span>{{ category.score }}/100</span>
+                  </div>
+                  <p class="weight">Weight {{ category.weight }}%</p>
+                  <p class="summary">{{ category.summary }}</p>
+                  {% if category.details %}
+                    <ul class="detail-list">
+                      {% for detail in category.details %}
+                        <li>
+                          <strong>{{ detail.skill }}</strong>
+                          <span class="detail-strength">{{ detail.strength }}%</span>
+                          <p>{{ detail.evidence }}</p>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </article>
+              {% endfor %}
+            </div>
+
+            <div class="insight-grid">
+              <article class="panel-card">
+                <h2>What Is Working</h2>
+                <ul class="plain-list">
+                  {% for strength in result.strengths %}
+                    <li>{{ strength }}</li>
+                  {% endfor %}
+                </ul>
+              </article>
+
+              <article class="panel-card">
+                <h2>Targeted Suggestions</h2>
+                <ul class="suggestion-list">
+                  {% for suggestion in result.suggestions %}
+                    <li>
+                      <div class="suggestion-head">
+                        <strong>{{ suggestion.title }}</strong>
+                        <span class="priority">{{ suggestion.priority }}</span>
+                      </div>
+                      <p>{{ suggestion.body }}</p>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <h2>Ready for a fit check</h2>
+              <p>The sample resume and job description are preloaded so you can test the app immediately.</p>
+            </div>
+          {% endif %}
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
