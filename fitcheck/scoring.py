@@ -161,7 +161,7 @@ def present_category(label: str, key: str, value: dict) -> dict:
 
 def normalize_text(text: str) -> str:
     lowered = text.lower().replace("&", " and ")
-    lowered = re.sub(r"[^a-z0-9.+#/\\-\s]", " ", lowered)
+    lowered = re.sub(r"[^a-z0-9.+#/\s\\-]", " ", lowered)
     lowered = re.sub(r"\s+", " ", lowered)
     return lowered.strip()
 
