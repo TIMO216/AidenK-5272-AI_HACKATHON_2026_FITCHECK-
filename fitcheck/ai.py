@@ -7,7 +7,6 @@ from openai import OpenAI
 from fitcheck.tone import (
     FITCHECK_ANALYSIS_SYSTEM_PROMPT,
     FITCHECK_CHATBOT_SYSTEM_PROMPT,
-    FITCHECK_SYSTEM_PROMPT,
 )
 
 
@@ -39,16 +38,12 @@ class FitCheckAI:
         target_count = 3 if not resubmit_context else max(1, min(2, len(top_gaps) or 1))
         prompt = (
             "You are generating the Suggestions section for FitCheck.\n"
-            "Use the FitCheck voice exactly.\n"
             f"Write exactly {target_count} suggestions.\n"
             "Each suggestion must include:\n"
             "- a short skill or gap label\n"
             "- one honest mentor-style explanation of what would actually move this student forward\n"
             "- one grounded example of what makes sense next, such as a project idea, professor outreach move, campus resource, credential, or portfolio direction\n"
             "Reference the actual job description language where relevant.\n"
-            "Do not use corporate language. Do not be mean. Do not be vague.\n"
-            "Do not give editing advice, writing critique, or formatting suggestions.\n"
-            "Do not sound like a checklist, task list, or productivity app.\n"
             f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
@@ -65,7 +60,6 @@ class FitCheckAI:
                 "Do not repeat old advice that was already addressed.\n"
                 "Do not invent new flaws.\n"
                 "Focus only on the 1 to 2 remaining meaningful gaps.\n"
-                "Do not turn this into critique about wording, structure, or presentation.\n"
             )
 
         schema = {
@@ -118,11 +112,10 @@ class FitCheckAI:
 
         prompt = (
             "You are generating the honest summary at the top of the FitCheck results screen.\n"
-            "Write 2 to 3 short sentences in the FitCheck voice.\n"
+            "Write 2 to 3 short sentences.\n"
             "Be plain, specific, direct, and respectful.\n"
             "Mention whether this student is strong, moderate, or a stretch for this role.\n"
             "Use their timing and experience level realistically.\n"
-            "No corporate language.\n"
             f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Final score: {final_score}\n"
             f"Fit band: {fit_band}\n"
@@ -140,7 +133,6 @@ class FitCheckAI:
                 "Do not repeat old advice.\n"
                 "Do not invent new flaws.\n"
                 "If the student is now competitive, say so and stop criticizing.\n"
-                "Do not shift into critique about wording, formatting, or presentation.\n"
             )
 
         schema = {
@@ -192,10 +184,6 @@ class FitCheckAI:
             "Maximum 3 sentences.\n"
             "If the student is just being conversational, respond like a normal human mentor and do not give advice.\n"
             "Only give advice if they clearly ask for help, analysis, feedback, what to fix, or whether they should apply.\n"
-            "No corporate language. No fluff. No shaming.\n"
-            "Do not act like an editor, grader, or writing coach.\n"
-            "Do not sound like a task list or productivity app.\n"
-            "Offer direction, not assignments.\n"
             f"Student name: {student_name}\n"
             f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Student score: {score}\n"
@@ -214,7 +202,6 @@ class FitCheckAI:
                 f"What's left: {json.dumps(comparison.get('whats_left', []))}\n"
                 "Encourage healthy progress.\n"
                 "Avoid perfectionism, overwork, or endless editing.\n"
-                "Do not shift into critique about wording, structure, formatting, or presentation.\n"
             )
 
         try:
