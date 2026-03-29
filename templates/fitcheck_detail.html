@@ -50,7 +50,7 @@
 
     <section class="card resubmit-panel" id="resubmit-panel" hidden>
       <div class="section-head">
-        <h2>Professional Resubmit</h2>
+        <h2>Resubmit for Review</h2>
       </div>
       <p class="muted-copy">
         Submit your updated version here. FitCheck will compare it to the last one, recognize what got better, and only tell you what still matters.
@@ -67,7 +67,7 @@
             <textarea id="resume_text" name="resume_text" rows="10" placeholder="Paste your updated version here."></textarea>
           </div>
         </div>
-        <button type="submit" class="primary-button">Submit Updated Version</button>
+        <button type="submit" class="primary-button">Resubmit</button>
       </form>
     </section>
 
@@ -162,10 +162,12 @@
                   <article class="suggestion-card">
                     <p><strong>{{ suggestion.title }}</strong></p>
                     <p>{{ suggestion.body }}</p>
-                    <p class="resource-line">
-                      <span class="resource-label">What would actually move you forward:</span>
-                      {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
-                    </p>
+                    {% if suggestion.resource %}
+                      <p class="resource-line">
+                        <span class="resource-label">What would actually move you forward:</span>
+                        {{ suggestion.resource }}
+                      </p>
+                    {% endif %}
                   </article>
                 {% endfor %}
               </div>
@@ -228,10 +230,14 @@
         <div class="mentor-summary-grid">
           <div class="mentor-summary-item"><span>Major</span><strong>{{ pathway_profile.major if pathway_profile else "Not added yet" }}</strong></div>
           <div class="mentor-summary-item"><span>Year</span><strong>{{ pathway_profile.year if pathway_profile else "Not added yet" }}</strong></div>
-          <div class="mentor-summary-item"><span>Target roles</span><strong>{{ pathway_profile.target_roles if pathway_profile and pathway_profile.target_roles else "Still figuring it out" }}</strong></div>
+          <div class="mentor-summary-item"><span>Timeline</span><strong>{{ pathway_profile.timeline if pathway_profile and pathway_profile.timeline else "Still figuring it out" }}</strong></div>
         </div>
-        {% if pathway_profile and pathway_profile.unsure_about %}
-          <p class="mentor-note">{{ pathway_profile.unsure_about }}</p>
+        {% if pathway_profile and (pathway_profile.interests or pathway_profile.certifications_considering) %}
+          <p class="mentor-note">
+            {{ pathway_profile.interests if pathway_profile.interests else "" }}
+            {% if pathway_profile.interests and pathway_profile.certifications_considering %} | {% endif %}
+            {{ pathway_profile.certifications_considering if pathway_profile.certifications_considering else "" }}
+          </p>
         {% endif %}
       </section>
 

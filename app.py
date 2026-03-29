@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from functools import wraps
 
 import pdfplumber
@@ -121,7 +122,25 @@ def pathway_profile_required(view_func):
 
 def infer_title(job_description: str) -> tuple[str, str]:
     lines = [line.strip() for line in job_description.splitlines() if line.strip()]
-    title = lines[0] if lines else "Untitled FitCheck"
+    title = ""
+    for line in lines[:8]:
+        match = re.match(r"^(?:job\s*title|title|position|role)\s*:\s*(.+)$", line, re.IGNORECASE)
+        if match:
+            title = match.group(1).strip()
+            break
+
+    if not title:
+        for line in lines[:5]:
+            if len(line) > 80:
+                continue
+            if re.search(r"(responsibilit|qualif|about us|overview|summary|description)\b", line, re.IGNORECASE):
+                continue
+            title = line
+            break
+
+    if not title:
+        title = "Untitled FitCheck"
+
     company_hint = ""
     if len(lines) > 1 and len(lines[1]) < 48:
         company_hint = lines[1]
@@ -130,37 +149,78 @@ def infer_title(job_description: str) -> tuple[str, str]:
     return title, company_hint
 
 
+def resolve_fitcheck_title(stored_title: str, job_description: str) -> str:
+    cleaned = (stored_title or "").strip()
+    placeholder_titles = {"", "Untitled FitCheck", "Untitled", "Placeholder Title"}
+    if cleaned in placeholder_titles:
+        inferred_title, _ = infer_title(job_description)
+        return inferred_title
+    return cleaned
+
+
+def dedupe_preserve_order(items: list[str]) -> list[str]:
+    seen = set()
+    unique_items = []
+    for item in items:
+        text = re.sub(r"\s+", " ", str(item).strip())
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_items.append(text)
+    return unique_items
+
+
+def sanitize_result_sections(result: dict) -> dict:
+    result["coach_summary"] = dedupe_preserve_order(result.get("coach_summary", []))[:3]
+    result["strengths"] = dedupe_preserve_order(result.get("strengths", []))[:3]
+    result["top_gaps"] = dedupe_preserve_order(result.get("top_gaps", []))[:3]
+
+    unique_suggestions = []
+    seen_suggestions = set()
+    for suggestion in result.get("suggestions", []):
+        title = re.sub(r"\s+", " ", str(suggestion.get("title", "")).strip())
+        body = re.sub(r"\s+", " ", str(suggestion.get("body", "")).strip())
+        resource = re.sub(r"\s+", " ", str(suggestion.get("resource", "")).strip())
+        key = (title.lower(), body.lower(), resource.lower())
+        if key in seen_suggestions or not (title or body or resource):
+            continue
+        seen_suggestions.add(key)
+        unique_suggestions.append(
+            {
+                "title": title,
+                "body": body,
+                "resource": resource,
+                "priority": suggestion.get("priority", "High"),
+            }
+        )
+    result["suggestions"] = unique_suggestions[:3]
+    return result
+
+
 def plain_text_pathway_profile(pathway_profile_row) -> str:
     if pathway_profile_row is None:
         return ""
     fields = [
-        ("University", pathway_profile_row["university"]),
         ("Major", pathway_profile_row["major"]),
         ("Year", pathway_profile_row["year"]),
+        ("GPA range", pathway_profile_row["gpa_range"]),
+        ("How they describe themselves", pathway_profile_row["personality_style"]),
         ("Target roles", pathway_profile_row["target_roles"]),
         ("Interests", pathway_profile_row["interests"]),
-        ("Certifications considering", pathway_profile_row["certifications_considering"]),
-        ("Personality", pathway_profile_row["personality_style"]),
-        ("Work style", pathway_profile_row["collaboration_style"]),
-        ("Task style", pathway_profile_row["task_style"]),
-        ("Confidence level", pathway_profile_row["confidence_level"]),
-        ("Where they feel confident", pathway_profile_row["confidence_environments"]),
-        ("Strengths", pathway_profile_row["strengths"]),
-        ("Concerns", pathway_profile_row["concerns"]),
-        ("What they wish they had guidance on", pathway_profile_row["guidance_needed"]),
-        ("What they are unsure about", pathway_profile_row["unsure_about"]),
-        ("Time constraints", pathway_profile_row["time_constraints"]),
-        ("Work commitments", pathway_profile_row["work_commitments"]),
-        ("Commute constraints", pathway_profile_row["commute_constraints"]),
-        ("Access constraints", pathway_profile_row["access_constraints"]),
-        ("Personal boundaries", pathway_profile_row["personal_boundaries"]),
-        ("Energy or workload limits", pathway_profile_row["energy_limits"]),
-        ("What they want this semester", pathway_profile_row["semester_goal"]),
-        ("What they want long-term", pathway_profile_row["long_term_goal"]),
-        ("What they have already tried", pathway_profile_row["already_tried"]),
-        ("What they are avoiding", pathway_profile_row["avoiding"]),
-        ("What they are proud of", pathway_profile_row["proud_of"]),
-        ("What progress looks like", pathway_profile_row["progress_definition"]),
+        ("Licenses or certifications they are considering", pathway_profile_row["certifications_considering"]),
+        ("Target organizations", pathway_profile_row["target_organizations"]),
+        ("Timeline", pathway_profile_row["timeline"]),
+        ("Opportunity type", pathway_profile_row["opportunity_type"]),
+        ("Mentor or professor recommender status", pathway_profile_row["mentor_status"]),
+        ("Current club, research, or campus involvement", pathway_profile_row["involvement_status"]),
+        ("LinkedIn status", pathway_profile_row["linkedin_status"]),
+        ("Cold email experience", pathway_profile_row["cold_email_status"]),
+        ("Outreach comfort", pathway_profile_row["outreach_comfort"]),
+        ("Professional email signature", pathway_profile_row["email_signature_status"]),
+        ("Career fair or networking event experience", pathway_profile_row["career_fair_status"]),
     ]
     return "\n".join(
         f"{label}: {value}" for label, value in fields if value
@@ -204,20 +264,6 @@ def apply_green_light_state(result: dict, job_type: str) -> dict:
         "tips": green_light_tips(job_type),
     }
     return result
-
-
-def fallback_resubmit_suggestions(remaining_gaps: list[str], job_type: str) -> list[dict]:
-    suggestions = []
-    for gap in remaining_gaps[:2]:
-        suggestions.append(
-            {
-                "title": gap,
-                "body": f"This is still one of the last meaningful things holding you back for {job_type.lower()} roles. Keep your next move focused and realistic.",
-                "resource": "Pick one concrete action this week that gives you stronger proof here without overloading yourself.",
-                "priority": "High",
-            }
-        )
-    return suggestions
 
 
 def run_fitcheck_analysis(
@@ -278,10 +324,8 @@ def run_fitcheck_analysis(
                 }
                 for item in ai_suggestions
             ]
-        elif previous_fitcheck is not None:
-            result["suggestions"] = fallback_resubmit_suggestions(result["top_gaps"], job_type)
 
-    return result
+    return sanitize_result_sections(result)
 
 
 @app.route("/")
@@ -349,30 +393,21 @@ def pathway_profile():
             university=request.form.get("university", ""),
             major=request.form.get("major", ""),
             year=request.form.get("year", ""),
+            gpa_range=request.form.get("gpa_range", ""),
             target_roles=request.form.get("target_roles", ""),
             interests=request.form.get("interests", ""),
             certifications_considering=request.form.get("certifications_considering", ""),
             personality_style=request.form.get("personality_style", ""),
-            collaboration_style=request.form.get("collaboration_style", ""),
-            task_style=request.form.get("task_style", ""),
-            confidence_level=request.form.get("confidence_level", ""),
-            confidence_environments=request.form.get("confidence_environments", ""),
-            strengths=request.form.get("strengths", ""),
-            concerns=request.form.get("concerns", ""),
-            guidance_needed=request.form.get("guidance_needed", ""),
-            unsure_about=request.form.get("unsure_about", ""),
-            time_constraints=request.form.get("time_constraints", ""),
-            work_commitments=request.form.get("work_commitments", ""),
-            commute_constraints=request.form.get("commute_constraints", ""),
-            access_constraints=request.form.get("access_constraints", ""),
-            personal_boundaries=request.form.get("personal_boundaries", ""),
-            energy_limits=request.form.get("energy_limits", ""),
-            semester_goal=request.form.get("semester_goal", ""),
-            long_term_goal=request.form.get("long_term_goal", ""),
-            already_tried=request.form.get("already_tried", ""),
-            avoiding=request.form.get("avoiding", ""),
-            proud_of=request.form.get("proud_of", ""),
-            progress_definition=request.form.get("progress_definition", ""),
+            target_organizations=request.form.get("target_organizations", ""),
+            timeline=request.form.get("timeline", ""),
+            opportunity_type=request.form.get("opportunity_type", ""),
+            mentor_status=request.form.get("mentor_status", ""),
+            involvement_status=request.form.get("involvement_status", ""),
+            linkedin_status=request.form.get("linkedin_status", ""),
+            cold_email_status=request.form.get("cold_email_status", ""),
+            outreach_comfort=request.form.get("outreach_comfort", ""),
+            email_signature_status=request.form.get("email_signature_status", ""),
+            career_fair_status=request.form.get("career_fair_status", ""),
         )
         return redirect(url_for("dashboard"))
 
@@ -391,7 +426,7 @@ def dashboard():
         cards.append(
             {
                 "id": item["id"],
-                "title": item["title"],
+                "title": resolve_fitcheck_title(item["title"], item["job_description"]) if "job_description" in item.keys() else item["title"],
                 "company_hint": item["company_hint"],
                 "experience_level": item["experience_level"],
                 "job_type": item["job_type"],
@@ -510,6 +545,9 @@ def fitcheck_detail(fitcheck_id: int):
         flash("That FitCheck could not be found.", "error")
         return redirect(url_for("dashboard"))
 
+    payload["title"] = resolve_fitcheck_title(payload.get("title", ""), payload.get("job_description", ""))
+    payload["result"] = sanitize_result_sections(payload["result"])
+
     return render_template(
         "fitcheck_detail.html",
         fitcheck=payload,
@@ -578,8 +616,8 @@ def chat():
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     context = payload.get("context") or {}
-    pathway_profile = current_pathway_profile()
     user = current_user()
+    pathway_profile = get_pathway_profile(int(user["id"])) if user else None
 
     if not question:
         return jsonify({"error": "Question is required."}), 400

@@ -6,24 +6,15 @@
   <section class="page-header">
     <p class="eyebrow">Step 1</p>
     <h1>Pathway Profile</h1>
-    <p>Fill this out once so every FitCheck can sound like it actually knows you, your situation, and what would make sense next.</p>
+    <p>Answer this once so FitCheck can give advice that actually fits your timeline, goals, and comfort level.</p>
   </section>
 
   <section class="card form-card">
     <form method="post" class="stack-form">
+      <h2>About You</h2>
       <div class="form-grid two-up">
         <div class="field">
-          <label for="university">University</label>
-          <input id="university" name="university" type="text" value="{{ pathway_profile.university if pathway_profile else '' }}" required>
-        </div>
-        <div class="field">
-          <label for="major">Major</label>
-          <input id="major" name="major" type="text" value="{{ pathway_profile.major if pathway_profile else '' }}" required>
-        </div>
-      </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="year">Year</label>
+          <label for="year">What year are you?</label>
           <select id="year" name="year" required>
             {% for option in ["Freshman","Sophomore","Junior","Senior","Career Switcher"] %}
               <option value="{{ option }}" {% if pathway_profile and pathway_profile.year == option %}selected{% endif %}>{{ option }}</option>
@@ -31,138 +22,133 @@
           </select>
         </div>
         <div class="field">
-          <label for="target_roles">What roles are you aiming for?</label>
-          <input id="target_roles" name="target_roles" type="text" value="{{ pathway_profile.target_roles if pathway_profile else '' }}" placeholder="Data analyst internship, sustainability consulting, product..." required>
+          <label for="major">What is your major?</label>
+          <input id="major" name="major" type="text" value="{{ pathway_profile.major if pathway_profile else '' }}" required>
         </div>
       </div>
-      <div class="field">
-        <label for="interests">What industries or topics actually interest you?</label>
-        <textarea id="interests" name="interests" rows="3">{{ pathway_profile.interests if pathway_profile else '' }}</textarea>
-      </div>
+
       <div class="form-grid two-up">
         <div class="field">
-          <label for="certifications_considering">Certifications or credentials you are considering</label>
-          <input id="certifications_considering" name="certifications_considering" type="text" value="{{ pathway_profile.certifications_considering if pathway_profile else '' }}" placeholder="LEED Green Associate, Google Data Analytics, none yet">
-        </div>
-        <div class="field">
-          <label for="confidence_level">Confidence level right now</label>
-          <select id="confidence_level" name="confidence_level">
-            {% for option in ["Low","Low to Medium","Medium","Medium to High","High"] %}
-              <option value="{{ option }}" {% if pathway_profile and pathway_profile.confidence_level == option %}selected{% endif %}>{{ option }}</option>
+          <label for="gpa_range">What is your GPA range?</label>
+          <select id="gpa_range" name="gpa_range">
+            {% for option in ["Under 2.5","2.5 to 3.0","3.0 to 3.5","3.5 plus"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.gpa_range == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>
         </div>
-      </div>
-      <div class="form-grid two-up">
         <div class="field">
-          <label for="personality_style">Personality</label>
+          <label for="personality_style">How would you describe yourself?</label>
           <select id="personality_style" name="personality_style">
-            {% for option in ["Introverted","In the middle","Extroverted"] %}
+            {% for option in ["More introverted","More extroverted","Somewhere in between"] %}
               <option value="{{ option }}" {% if pathway_profile and pathway_profile.personality_style == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>
         </div>
+      </div>
+
+      <h2>Your Goals</h2>
+      <div class="field">
+        <label for="interests">What industries are you interested in? Pick up to three.</label>
+        <input id="interests" name="interests" type="text" value="{{ pathway_profile.interests if pathway_profile else '' }}" placeholder="Tech, healthcare, consulting">
+      </div>
+
+      <div class="field">
+        <label for="certifications_considering">Are there any licenses or certifications you have been thinking about?</label>
+        <input id="certifications_considering" name="certifications_considering" type="text" value="{{ pathway_profile.certifications_considering if pathway_profile else '' }}" placeholder="Optional">
+      </div>
+
+      <div class="field">
+        <label for="target_organizations">Do you have specific companies or organizations you want to work for?</label>
+        <input id="target_organizations" name="target_organizations" type="text" value="{{ pathway_profile.target_organizations if pathway_profile else '' }}" placeholder="Optional">
+      </div>
+
+      <div class="form-grid two-up">
         <div class="field">
-          <label for="collaboration_style">Work style</label>
-          <select id="collaboration_style" name="collaboration_style">
-            {% for option in ["Prefer solo work","Like a mix of solo and group work","Prefer group work"] %}
-              <option value="{{ option }}" {% if pathway_profile and pathway_profile.collaboration_style == option %}selected{% endif %}>{{ option }}</option>
+          <label for="timeline">What is your timeline?</label>
+          <select id="timeline" name="timeline">
+            {% for option in ["Applying this semester","Applying next semester","Planning ahead for next year"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.timeline == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="opportunity_type">What type of opportunity are you looking for?</label>
+          <select id="opportunity_type" name="opportunity_type">
+            {% for option in ["Research position","Internship","Part time job","Full time after graduation"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.opportunity_type == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
+
+      <h2>Your Current Situation</h2>
       <div class="form-grid two-up">
         <div class="field">
-          <label for="task_style">Do you like structure or open-ended work?</label>
-          <select id="task_style" name="task_style">
-            {% for option in ["Prefer structured tasks","Like a mix","Prefer open-ended creative work"] %}
-              <option value="{{ option }}" {% if pathway_profile and pathway_profile.task_style == option %}selected{% endif %}>{{ option }}</option>
+          <label for="mentor_status">Do you have a professor or mentor who knows your work well enough to recommend you?</label>
+          <select id="mentor_status" name="mentor_status">
+            {% for option in ["Yes","Working on it","Not yet"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.mentor_status == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="field">
-          <label for="confidence_environments">What environments make you feel confident?</label>
-          <input id="confidence_environments" name="confidence_environments" type="text" value="{{ pathway_profile.confidence_environments if pathway_profile else '' }}" placeholder="Small teams, labs, independent work, structured classes">
+          <label for="involvement_status">Are you currently involved in any clubs, research, or campus organizations?</label>
+          <select id="involvement_status" name="involvement_status">
+            {% for option in ["Yes","No"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.involvement_status == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
+
       <div class="form-grid two-up">
         <div class="field">
-          <label for="strengths">What are you naturally good at?</label>
-          <textarea id="strengths" name="strengths" rows="4">{{ pathway_profile.strengths if pathway_profile else '' }}</textarea>
+          <label for="linkedin_status">Have you started building your LinkedIn profile?</label>
+          <select id="linkedin_status" name="linkedin_status">
+            {% for option in ["Yes","In progress","Not yet"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.linkedin_status == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="field">
-          <label for="proud_of">What are you proud of already?</label>
-          <textarea id="proud_of" name="proud_of" rows="4">{{ pathway_profile.proud_of if pathway_profile else '' }}</textarea>
+          <label for="cold_email_status">Have you cold emailed anyone in your field before?</label>
+          <select id="cold_email_status" name="cold_email_status">
+            {% for option in ["Yes","No","Not sure how"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.cold_email_status == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
+
+      <h2>Your Comfort Level</h2>
       <div class="form-grid two-up">
         <div class="field">
-          <label for="concerns">What feels hard or uncertain right now?</label>
-          <textarea id="concerns" name="concerns" rows="4">{{ pathway_profile.concerns if pathway_profile else '' }}</textarea>
+          <label for="outreach_comfort">How comfortable are you reaching out to people you do not know?</label>
+          <select id="outreach_comfort" name="outreach_comfort">
+            {% for option in ["Very comfortable","Somewhat comfortable","Not comfortable at all"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.outreach_comfort == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="field">
-          <label for="guidance_needed">What do you wish you had more guidance on?</label>
-          <textarea id="guidance_needed" name="guidance_needed" rows="4">{{ pathway_profile.guidance_needed if pathway_profile else '' }}</textarea>
+          <label for="email_signature_status">Do you have a professional email signature?</label>
+          <select id="email_signature_status" name="email_signature_status">
+            {% for option in ["Yes","No"] %}
+              <option value="{{ option }}" {% if pathway_profile and pathway_profile.email_signature_status == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
+
       <div class="field">
-          <label for="unsure_about">What are you unsure about?</label>
-        <textarea id="unsure_about" name="unsure_about" rows="4" required>{{ pathway_profile.unsure_about if pathway_profile else '' }}</textarea>
+        <label for="career_fair_status">Have you attended any career fairs or networking events?</label>
+        <select id="career_fair_status" name="career_fair_status">
+          {% for option in ["Yes","No"] %}
+            <option value="{{ option }}" {% if pathway_profile and pathway_profile.career_fair_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="semester_goal">What do you want this semester?</label>
-          <textarea id="semester_goal" name="semester_goal" rows="4">{{ pathway_profile.semester_goal if pathway_profile else '' }}</textarea>
-        </div>
-        <div class="field">
-          <label for="long_term_goal">What do you want long-term?</label>
-          <textarea id="long_term_goal" name="long_term_goal" rows="4">{{ pathway_profile.long_term_goal if pathway_profile else '' }}</textarea>
-        </div>
-      </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="already_tried">What have you already tried?</label>
-          <textarea id="already_tried" name="already_tried" rows="4">{{ pathway_profile.already_tried if pathway_profile else '' }}</textarea>
-        </div>
-        <div class="field">
-          <label for="avoiding">What are you avoiding right now?</label>
-          <textarea id="avoiding" name="avoiding" rows="4">{{ pathway_profile.avoiding if pathway_profile else '' }}</textarea>
-        </div>
-      </div>
-      <div class="field">
-        <label for="progress_definition">What would progress look like to you?</label>
-        <textarea id="progress_definition" name="progress_definition" rows="3">{{ pathway_profile.progress_definition if pathway_profile else '' }}</textarea>
-      </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="time_constraints">How much time do you realistically have this semester?</label>
-          <textarea id="time_constraints" name="time_constraints" rows="3">{{ pathway_profile.time_constraints if pathway_profile else '' }}</textarea>
-        </div>
-        <div class="field">
-          <label for="work_commitments">Are you working a job or balancing other major commitments?</label>
-          <textarea id="work_commitments" name="work_commitments" rows="3">{{ pathway_profile.work_commitments if pathway_profile else '' }}</textarea>
-        </div>
-      </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="commute_constraints">Commute or schedule constraints</label>
-          <textarea id="commute_constraints" name="commute_constraints" rows="3">{{ pathway_profile.commute_constraints if pathway_profile else '' }}</textarea>
-        </div>
-        <div class="field">
-          <label for="access_constraints">Access limits or opportunities you do not have easy access to</label>
-          <textarea id="access_constraints" name="access_constraints" rows="3">{{ pathway_profile.access_constraints if pathway_profile else '' }}</textarea>
-        </div>
-      </div>
-      <div class="form-grid two-up">
-        <div class="field">
-          <label for="personal_boundaries">Personal boundaries you want respected</label>
-          <textarea id="personal_boundaries" name="personal_boundaries" rows="3">{{ pathway_profile.personal_boundaries if pathway_profile else '' }}</textarea>
-        </div>
-        <div class="field">
-          <label for="energy_limits">Energy or workload limits</label>
-          <textarea id="energy_limits" name="energy_limits" rows="3">{{ pathway_profile.energy_limits if pathway_profile else '' }}</textarea>
-        </div>
-      </div>
+
       <button type="submit" class="primary-button">Save Pathway Profile</button>
     </form>
   </section>
