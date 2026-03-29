@@ -16,18 +16,12 @@
     {% if result and score >= 80 %}
       {% set fit_band = "Strong Fit" %}
       {% set fit_class = "fit-strong" %}
-      {% set summary_primary = "Your resume already reads like a credible match for this role, not just a partial overlap." %}
-      {% set summary_secondary = "The next step is less about closing major gaps and more about sharpening how clearly your strongest evidence appears to a recruiter." %}
     {% elif result and score >= 60 %}
       {% set fit_band = "Moderate Fit" %}
       {% set fit_class = "fit-moderate" %}
-      {% set summary_primary = "You have real alignment with this role, but a hiring team would still see a few evidence gaps." %}
-      {% set summary_secondary = "You are not starting from zero, but stronger proof in the missing areas would materially improve your odds before you apply." %}
     {% elif result %}
       {% set fit_band = "Stretch" %}
       {% set fit_class = "fit-stretch" %}
-      {% set summary_primary = "This role is currently a stretch based on the evidence shown in your resume." %}
-      {% set summary_secondary = "That does not mean the role is out of reach, but you likely need stronger role-specific proof before applying confidently." %}
     {% endif %}
 
     <nav class="site-nav">
@@ -63,23 +57,23 @@
             <div class="field">
               <label for="experience_level">Experience Level</label>
               <select id="experience_level" name="experience_level">
-                <option {% if request.form.get('experience_level', '') == 'Freshman' %}selected{% endif %}>Freshman</option>
-                <option {% if request.form.get('experience_level', '') == 'Sophomore' %}selected{% endif %}>Sophomore</option>
-                <option {% if request.form.get('experience_level', '') == 'Junior' %}selected{% endif %}>Junior</option>
-                <option {% if request.form.get('experience_level', '') == 'Senior' %}selected{% endif %}>Senior</option>
-                <option {% if request.form.get('experience_level', '') == 'Career Switcher' %}selected{% endif %}>Career Switcher</option>
+                <option {% if experience_level == 'Freshman' %}selected{% endif %}>Freshman</option>
+                <option {% if experience_level == 'Sophomore' %}selected{% endif %}>Sophomore</option>
+                <option {% if experience_level == 'Junior' %}selected{% endif %}>Junior</option>
+                <option {% if experience_level == 'Senior' %}selected{% endif %}>Senior</option>
+                <option {% if experience_level == 'Career Switcher' %}selected{% endif %}>Career Switcher</option>
               </select>
             </div>
             <div class="field">
               <label for="job_type">Job Type</label>
               <select id="job_type" name="job_type">
-                <option {% if request.form.get('job_type', '') == 'Data and Analytics' %}selected{% endif %}>Data and Analytics</option>
-                <option {% if request.form.get('job_type', '') == 'Software and Engineering' %}selected{% endif %}>Software and Engineering</option>
-                <option {% if request.form.get('job_type', '') == 'HR and People' %}selected{% endif %}>HR and People</option>
-                <option {% if request.form.get('job_type', '') == 'Business and Operations' %}selected{% endif %}>Business and Operations</option>
-                <option {% if request.form.get('job_type', '') == 'Marketing and Communications' %}selected{% endif %}>Marketing and Communications</option>
-                <option {% if request.form.get('job_type', '') == 'Research and Science' %}selected{% endif %}>Research and Science</option>
-                <option {% if request.form.get('job_type', '') == 'Other' %}selected{% endif %}>Other</option>
+                <option {% if job_type == 'Data and Analytics' %}selected{% endif %}>Data and Analytics</option>
+                <option {% if job_type == 'Software and Engineering' %}selected{% endif %}>Software and Engineering</option>
+                <option {% if job_type == 'HR and People' %}selected{% endif %}>HR and People</option>
+                <option {% if job_type == 'Business and Operations' %}selected{% endif %}>Business and Operations</option>
+                <option {% if job_type == 'Marketing and Communications' %}selected{% endif %}>Marketing and Communications</option>
+                <option {% if job_type == 'Research and Science' %}selected{% endif %}>Research and Science</option>
+                <option {% if job_type == 'Other' %}selected{% endif %}>Other</option>
               </select>
             </div>
           </div>
@@ -97,8 +91,9 @@
             </div>
             <div class="fit-pill {{ fit_class }}">{{ fit_band }}</div>
             <div class="results-summary">
-              <p>{{ summary_primary }}</p>
-              <p>{{ summary_secondary }}</p>
+              {% for line in result.coach_summary[:3] %}
+                <p>{{ line }}</p>
+              {% endfor %}
             </div>
           </section>
 

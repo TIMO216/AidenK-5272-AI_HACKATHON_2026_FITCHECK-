@@ -3,6 +3,8 @@ import re
 from collections import Counter
 from typing import Optional
 
+from fitcheck.tone import FITCHECK_SYSTEM_PROMPT, job_type_coaching_line, level_coaching_line
+
 
 CATEGORY_WEIGHTS = {
     "skills_match": 35,
@@ -108,7 +110,12 @@ ROLE_SIGNAL_MAP = {
 }
 
 
-def analyze_fit(resume_text: str, job_description: str) -> dict:
+def analyze_fit(
+    resume_text: str,
+    job_description: str,
+    experience_level: str = "Junior",
+    job_type: str = "Software and Engineering",
+) -> dict:
     resume = normalize_text(resume_text)
     job = normalize_text(job_description)
 
@@ -142,9 +149,18 @@ def analyze_fit(resume_text: str, job_description: str) -> dict:
             job_requirements=jd_requirements,
             role_family=role_family,
             category_results=category_results,
+            experience_level=experience_level,
+            job_type=job_type,
         ),
         "strengths": build_strengths(category_results),
         "top_requirements": [req["skill"] for req in jd_requirements[:8]],
+        "coach_summary": build_coach_summary(
+            weighted_score=round(weighted_score),
+            category_results=category_results,
+            experience_level=experience_level,
+            job_type=job_type,
+        ),
+        "system_prompt": FITCHECK_SYSTEM_PROMPT,
     }
 
 
@@ -284,7 +300,7 @@ def score_skills_match(resume: str, resume_bullets: list[str], requirements: lis
     strong = sum(1 for item in evidence_hits if item["strength"] >= 70)
     return {
         "score": max(18, min(score, 96)),
-        "summary": f"Matched {strong} of {len(evidence_hits)} high-value requirements with concrete evidence.",
+        "summary": f"You matched {strong} of {len(evidence_hits)} important requirements with proof on the page, not just keywords.",
         "details": evidence_hits[:6],
     }
 
@@ -319,8 +335,8 @@ def score_experience_relevance(resume: str, resume_bullets: list[str], requireme
     return {
         "score": max(12, min(safe_round(score), 92)),
         "summary": (
-            f"{len(relevant_bullets)} of {len(resume_bullets)} bullets align with the role, "
-            f"with the strongest examples showing {top_overlap} direct requirement overlaps."
+            f"{len(relevant_bullets)} of {len(resume_bullets)} bullets actually line up with this role, "
+            f"and the best examples hit {top_overlap} direct requirement signals."
         ),
         "details": [
             {
@@ -350,7 +366,7 @@ def score_evidence_quality(resume_bullets: list[str], requirements: list[dict]) 
 
     return {
         "score": score,
-        "summary": "Evidence quality reflects whether bullets show action, scope, and outcomes for the role needs.",
+        "summary": "This score checks whether your bullets prove what you did, who it helped, and what changed because of your work.",
         "details": [
             {
                 "skill": "High-quality evidence" if factor >= 0.65 else "Weak evidence",
@@ -387,7 +403,7 @@ def score_role_signals(resume: str, resume_bullets: list[str], role_family: Opti
 
     return {
         "score": max(10, min(safe_round(raw_score), 90)),
-        "summary": f"Detected {len(explicit_signals)} explicit {role_family.replace('_', ' ')} signals in the resume.",
+        "summary": f"We found {len(explicit_signals)} explicit {role_family.replace('_', ' ')} signals that a recruiter would actually recognize.",
         "details": [
             {
                 "skill": term.title(),
@@ -475,6 +491,8 @@ def build_suggestions(
     job_requirements: list[dict],
     role_family: Optional[str],
     category_results: dict,
+    experience_level: str,
+    job_type: str,
 ) -> list[dict]:
     suggestions = []
     jd_sentences = [line.strip(" -") for line in job_description.splitlines() if len(line.strip()) > 20]
@@ -518,9 +536,9 @@ def build_suggestions(
 
 def build_skill_specific_suggestion(skill: str, jd_context: str, role_family: Optional[str], evidence_strength: float) -> str:
     if evidence_strength == 0:
-        prefix = f"The job description explicitly asks for {skill}, but your resume does not show it yet."
+        prefix = f"The job description explicitly asks for {skill}, and right now your resume does not prove it."
     else:
-        prefix = f"{skill.title()} appears on the resume, but the evidence is still light."
+        prefix = f"You mention {skill}, but the proof is still thin."
 
     action_map = {
         "python": "Name the script, service, or automation you built in Python and what it delivered.",
@@ -548,6 +566,27 @@ def build_skill_specific_suggestion(skill: str, jd_context: str, role_family: Op
     elif role_family == "product":
         role_nudge = " Focus on user insight, stakeholder alignment, and decisions influenced."
     return prefix + context + " " + action + role_nudge
+
+
+def build_coach_summary(weighted_score: int, category_results: dict, experience_level: str, job_type: str) -> list[str]:
+    weakest_category = min(category_results.items(), key=lambda item: item[1]["score"])[0]
+    weakest_labels = {
+        "skills_match": "skill proof",
+        "experience_relevance": "role relevance",
+        "evidence_quality": "evidence quality",
+        "role_specific_signals": "role-specific credibility",
+    }
+
+    if weighted_score >= 80:
+        line_one = "You are in a good spot for this role. The resume already shows real proof, not just interest."
+    elif weighted_score >= 60:
+        line_one = "You have a real shot here, but a recruiter would still see a few places where the proof is lighter than it needs to be."
+    else:
+        line_one = "This role is a stretch right now, and FitCheck should say that plainly. The gap is not interest. The gap is proof."
+
+    line_two = level_coaching_line(experience_level)
+    line_three = f"Your biggest weakness right now is {weakest_labels[weakest_category]}. {job_type_coaching_line(job_type)}"
+    return [line_one, line_two, line_three]
 
 
 def build_strengths(category_results: dict) -> list[str]:

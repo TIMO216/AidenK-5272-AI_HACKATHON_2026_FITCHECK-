@@ -50,18 +50,29 @@ def index():
     result = None
     resume_text = SAMPLE_RESUME
     job_description = SAMPLE_JOB_DESCRIPTION
+    experience_level = "Junior"
+    job_type = "Software and Engineering"
 
     if request.method == "POST":
         resume_text = request.form.get("resume_text", "").strip()
         job_description = request.form.get("job_description", "").strip()
+        experience_level = request.form.get("experience_level", experience_level)
+        job_type = request.form.get("job_type", job_type)
         if resume_text and job_description:
-            result = analyze_fit(resume_text, job_description)
+            result = analyze_fit(
+                resume_text,
+                job_description,
+                experience_level=experience_level,
+                job_type=job_type,
+            )
 
     return render_template(
         "index.html",
         result=result,
         resume_text=resume_text,
         job_description=job_description,
+        experience_level=experience_level,
+        job_type=job_type,
     )
 
 
