@@ -371,7 +371,7 @@ def list_fitchecks(user_id: int) -> list[sqlite3.Row]:
     cursor = connection.cursor()
     cursor.execute(
         """
-        SELECT id, title, company_hint, experience_level, job_type, created_at, result_json
+        SELECT id, title, company_hint, experience_level, job_type, created_at, result_json, job_description
         FROM fitchecks
         WHERE user_id = ?
         ORDER BY datetime(created_at) DESC, id DESC

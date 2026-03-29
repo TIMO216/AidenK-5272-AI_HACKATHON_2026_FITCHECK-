@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from functools import wraps
 
 import pdfplumber
@@ -121,13 +122,82 @@ def pathway_profile_required(view_func):
 
 def infer_title(job_description: str) -> tuple[str, str]:
     lines = [line.strip() for line in job_description.splitlines() if line.strip()]
-    title = lines[0] if lines else "Untitled FitCheck"
+    title = ""
+    for line in lines[:8]:
+        match = re.match(r"^(?:job\s*title|title|position|role)\s*:\s*(.+)$", line, re.IGNORECASE)
+        if match:
+            title = match.group(1).strip()
+            break
+
+    if not title:
+        for line in lines[:5]:
+            if len(line) > 80:
+                continue
+            if re.search(r"(responsibilit|qualif|about us|overview|summary|description)\b", line, re.IGNORECASE):
+                continue
+            title = line
+            break
+
+    if not title:
+        title = "Untitled FitCheck"
+
     company_hint = ""
     if len(lines) > 1 and len(lines[1]) < 48:
         company_hint = lines[1]
     title = title[:80]
     company_hint = company_hint[:60]
     return title, company_hint
+
+
+def resolve_fitcheck_title(stored_title: str, job_description: str) -> str:
+    cleaned = (stored_title or "").strip()
+    placeholder_titles = {"", "Untitled FitCheck", "Untitled", "Placeholder Title"}
+    if cleaned in placeholder_titles:
+        inferred_title, _ = infer_title(job_description)
+        return inferred_title
+    return cleaned
+
+
+def dedupe_preserve_order(items: list[str]) -> list[str]:
+    seen = set()
+    unique_items = []
+    for item in items:
+        text = re.sub(r"\s+", " ", str(item).strip())
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_items.append(text)
+    return unique_items
+
+
+def sanitize_result_sections(result: dict) -> dict:
+    result["coach_summary"] = dedupe_preserve_order(result.get("coach_summary", []))[:3]
+    result["strengths"] = dedupe_preserve_order(result.get("strengths", []))[:3]
+    result["top_gaps"] = dedupe_preserve_order(result.get("top_gaps", []))[:3]
+
+    unique_suggestions = []
+    seen_suggestions = set()
+    for suggestion in result.get("suggestions", []):
+        title = re.sub(r"\s+", " ", str(suggestion.get("title", "")).strip())
+        body = re.sub(r"\s+", " ", str(suggestion.get("body", "")).strip())
+        resource = re.sub(r"\s+", " ", str(suggestion.get("resource", "")).strip())
+        key = (title.lower(), body.lower(), resource.lower())
+        if key in seen_suggestions or not (title or body or resource):
+            continue
+        seen_suggestions.add(key)
+        unique_suggestions.append(
+            {
+                "title": title,
+                "body": body,
+                "resource": resource,
+                "priority": suggestion.get("priority", "High"),
+            }
+        )
+    result["suggestions"] = unique_suggestions[:3]
+    return result
 
 
 def plain_text_pathway_profile(pathway_profile_row) -> str:
@@ -265,7 +335,7 @@ def run_fitcheck_analysis(
                 for item in ai_suggestions
             ]
 
-    return result
+    return sanitize_result_sections(result)
 
 
 @app.route("/")
@@ -375,7 +445,7 @@ def dashboard():
         cards.append(
             {
                 "id": item["id"],
-                "title": item["title"],
+                "title": resolve_fitcheck_title(item["title"], item["job_description"]) if "job_description" in item.keys() else item["title"],
                 "company_hint": item["company_hint"],
                 "experience_level": item["experience_level"],
                 "job_type": item["job_type"],
@@ -494,6 +564,9 @@ def fitcheck_detail(fitcheck_id: int):
         flash("That FitCheck could not be found.", "error")
         return redirect(url_for("dashboard"))
 
+    payload["title"] = resolve_fitcheck_title(payload.get("title", ""), payload.get("job_description", ""))
+    payload["result"] = sanitize_result_sections(payload["result"])
+
     return render_template(
         "fitcheck_detail.html",
         fitcheck=payload,
@@ -562,8 +635,8 @@ def chat():
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     context = payload.get("context") or {}
-    pathway_profile = current_pathway_profile()
     user = current_user()
+    pathway_profile = get_pathway_profile(int(user["id"])) if user else None
 
     if not question:
         return jsonify({"error": "Question is required."}), 400
