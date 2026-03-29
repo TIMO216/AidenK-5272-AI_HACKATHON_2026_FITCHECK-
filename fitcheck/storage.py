@@ -34,30 +34,20 @@ def init_db() -> None:
             university TEXT,
             major TEXT,
             year TEXT,
-            target_roles TEXT,
+            gpa_range TEXT,
+            personality_style TEXT,
             interests TEXT,
             certifications_considering TEXT,
-            personality_style TEXT,
-            collaboration_style TEXT,
-            task_style TEXT,
-            confidence_level TEXT,
-            confidence_environments TEXT,
-            strengths TEXT,
-            concerns TEXT,
-            guidance_needed TEXT,
-            unsure_about TEXT,
-            time_constraints TEXT,
-            work_commitments TEXT,
-            commute_constraints TEXT,
-            access_constraints TEXT,
-            personal_boundaries TEXT,
-            energy_limits TEXT,
-            semester_goal TEXT,
-            long_term_goal TEXT,
-            already_tried TEXT,
-            avoiding TEXT,
-            proud_of TEXT,
-            progress_definition TEXT,
+            target_organizations TEXT,
+            timeline TEXT,
+            opportunity_type TEXT,
+            mentor_status TEXT,
+            involvement_status TEXT,
+            linkedin_status TEXT,
+            cold_email_status TEXT,
+            outreach_comfort TEXT,
+            email_signature_status TEXT,
+            career_fair_status TEXT,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
@@ -84,30 +74,21 @@ def init_db() -> None:
     )
 
     ensure_column(cursor, "fitchecks", "parent_fitcheck_id", "INTEGER")
+    ensure_column(cursor, "pathway_profiles", "gpa_range", "TEXT")
     ensure_column(cursor, "pathway_profiles", "target_roles", "TEXT")
     ensure_column(cursor, "pathway_profiles", "interests", "TEXT")
     ensure_column(cursor, "pathway_profiles", "certifications_considering", "TEXT")
     ensure_column(cursor, "pathway_profiles", "personality_style", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "collaboration_style", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "task_style", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "confidence_level", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "confidence_environments", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "strengths", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "concerns", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "guidance_needed", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "unsure_about", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "time_constraints", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "work_commitments", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "commute_constraints", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "access_constraints", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "personal_boundaries", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "energy_limits", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "semester_goal", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "long_term_goal", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "already_tried", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "avoiding", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "proud_of", "TEXT")
-    ensure_column(cursor, "pathway_profiles", "progress_definition", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "target_organizations", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "timeline", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "opportunity_type", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "mentor_status", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "involvement_status", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "linkedin_status", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "cold_email_status", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "outreach_comfort", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "email_signature_status", "TEXT")
+    ensure_column(cursor, "pathway_profiles", "career_fair_status", "TEXT")
     migrate_legacy_pathway_profile_data(cursor)
 
     connection.commit()
@@ -134,7 +115,7 @@ def migrate_legacy_pathway_profile_data(cursor: sqlite3.Cursor) -> None:
             major,
             year,
             target_roles,
-            unsure_about,
+            interests,
             updated_at
         )
         SELECT
@@ -185,30 +166,21 @@ def save_pathway_profile(
     university: str,
     major: str,
     year: str,
+    gpa_range: str,
     target_roles: str,
     interests: str,
     certifications_considering: str,
     personality_style: str,
-    collaboration_style: str,
-    task_style: str,
-    confidence_level: str,
-    confidence_environments: str,
-    strengths: str,
-    concerns: str,
-    guidance_needed: str,
-    unsure_about: str,
-    time_constraints: str,
-    work_commitments: str,
-    commute_constraints: str,
-    access_constraints: str,
-    personal_boundaries: str,
-    energy_limits: str,
-    semester_goal: str,
-    long_term_goal: str,
-    already_tried: str,
-    avoiding: str,
-    proud_of: str,
-    progress_definition: str,
+    target_organizations: str,
+    timeline: str,
+    opportunity_type: str,
+    mentor_status: str,
+    involvement_status: str,
+    linkedin_status: str,
+    cold_email_status: str,
+    outreach_comfort: str,
+    email_signature_status: str,
+    career_fair_status: str,
 ) -> None:
     connection = connect_db()
     cursor = connection.cursor()
@@ -219,61 +191,43 @@ def save_pathway_profile(
             university,
             major,
             year,
+            gpa_range,
             target_roles,
             interests,
             certifications_considering,
             personality_style,
-            collaboration_style,
-            task_style,
-            confidence_level,
-            confidence_environments,
-            strengths,
-            concerns,
-            guidance_needed,
-            unsure_about,
-            time_constraints,
-            work_commitments,
-            commute_constraints,
-            access_constraints,
-            personal_boundaries,
-            energy_limits,
-            semester_goal,
-            long_term_goal,
-            already_tried,
-            avoiding,
-            proud_of,
-            progress_definition,
+            target_organizations,
+            timeline,
+            opportunity_type,
+            mentor_status,
+            involvement_status,
+            linkedin_status,
+            cold_email_status,
+            outreach_comfort,
+            email_signature_status,
+            career_fair_status,
             updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
             university = excluded.university,
             major = excluded.major,
             year = excluded.year,
+            gpa_range = excluded.gpa_range,
             target_roles = excluded.target_roles,
             interests = excluded.interests,
             certifications_considering = excluded.certifications_considering,
             personality_style = excluded.personality_style,
-            collaboration_style = excluded.collaboration_style,
-            task_style = excluded.task_style,
-            confidence_level = excluded.confidence_level,
-            confidence_environments = excluded.confidence_environments,
-            strengths = excluded.strengths,
-            concerns = excluded.concerns,
-            guidance_needed = excluded.guidance_needed,
-            unsure_about = excluded.unsure_about,
-            time_constraints = excluded.time_constraints,
-            work_commitments = excluded.work_commitments,
-            commute_constraints = excluded.commute_constraints,
-            access_constraints = excluded.access_constraints,
-            personal_boundaries = excluded.personal_boundaries,
-            energy_limits = excluded.energy_limits,
-            semester_goal = excluded.semester_goal,
-            long_term_goal = excluded.long_term_goal,
-            already_tried = excluded.already_tried,
-            avoiding = excluded.avoiding,
-            proud_of = excluded.proud_of,
-            progress_definition = excluded.progress_definition,
+            target_organizations = excluded.target_organizations,
+            timeline = excluded.timeline,
+            opportunity_type = excluded.opportunity_type,
+            mentor_status = excluded.mentor_status,
+            involvement_status = excluded.involvement_status,
+            linkedin_status = excluded.linkedin_status,
+            cold_email_status = excluded.cold_email_status,
+            outreach_comfort = excluded.outreach_comfort,
+            email_signature_status = excluded.email_signature_status,
+            career_fair_status = excluded.career_fair_status,
             updated_at = CURRENT_TIMESTAMP
         """,
         (
@@ -281,30 +235,21 @@ def save_pathway_profile(
             university.strip(),
             major.strip(),
             year.strip(),
+            gpa_range.strip(),
             target_roles.strip(),
             interests.strip(),
             certifications_considering.strip(),
             personality_style.strip(),
-            collaboration_style.strip(),
-            task_style.strip(),
-            confidence_level.strip(),
-            confidence_environments.strip(),
-            strengths.strip(),
-            concerns.strip(),
-            guidance_needed.strip(),
-            unsure_about.strip(),
-            time_constraints.strip(),
-            work_commitments.strip(),
-            commute_constraints.strip(),
-            access_constraints.strip(),
-            personal_boundaries.strip(),
-            energy_limits.strip(),
-            semester_goal.strip(),
-            long_term_goal.strip(),
-            already_tried.strip(),
-            avoiding.strip(),
-            proud_of.strip(),
-            progress_definition.strip(),
+            target_organizations.strip(),
+            timeline.strip(),
+            opportunity_type.strip(),
+            mentor_status.strip(),
+            involvement_status.strip(),
+            linkedin_status.strip(),
+            cold_email_status.strip(),
+            outreach_comfort.strip(),
+            email_signature_status.strip(),
+            career_fair_status.strip(),
         ),
     )
     connection.commit()

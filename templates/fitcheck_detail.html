@@ -230,10 +230,14 @@
         <div class="mentor-summary-grid">
           <div class="mentor-summary-item"><span>Major</span><strong>{{ pathway_profile.major if pathway_profile else "Not added yet" }}</strong></div>
           <div class="mentor-summary-item"><span>Year</span><strong>{{ pathway_profile.year if pathway_profile else "Not added yet" }}</strong></div>
-          <div class="mentor-summary-item"><span>Target roles</span><strong>{{ pathway_profile.target_roles if pathway_profile and pathway_profile.target_roles else "Still figuring it out" }}</strong></div>
+          <div class="mentor-summary-item"><span>Timeline</span><strong>{{ pathway_profile.timeline if pathway_profile and pathway_profile.timeline else "Still figuring it out" }}</strong></div>
         </div>
-        {% if pathway_profile and pathway_profile.unsure_about %}
-          <p class="mentor-note">{{ pathway_profile.unsure_about }}</p>
+        {% if pathway_profile and (pathway_profile.interests or pathway_profile.certifications_considering) %}
+          <p class="mentor-note">
+            {{ pathway_profile.interests if pathway_profile.interests else "" }}
+            {% if pathway_profile.interests and pathway_profile.certifications_considering %} | {% endif %}
+            {{ pathway_profile.certifications_considering if pathway_profile.certifications_considering else "" }}
+          </p>
         {% endif %}
       </section>
 

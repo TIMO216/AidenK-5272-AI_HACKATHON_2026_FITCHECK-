@@ -16,11 +16,12 @@
   <section class="dashboard-grid">
     <article class="card summary-card">
       <h2>Your Pathway Profile</h2>
-      <div class="summary-pair"><span>University</span><strong>{{ pathway_profile.university }}</strong></div>
       <div class="summary-pair"><span>Major</span><strong>{{ pathway_profile.major }}</strong></div>
       <div class="summary-pair"><span>Year</span><strong>{{ pathway_profile.year }}</strong></div>
-      <div class="summary-pair"><span>Target roles</span><strong>{{ pathway_profile.target_roles }}</strong></div>
-      <p class="summary-note">{{ pathway_profile.unsure_about }}</p>
+      <div class="summary-pair"><span>GPA range</span><strong>{{ pathway_profile.gpa_range if pathway_profile.gpa_range else "Not added" }}</strong></div>
+      <div class="summary-pair"><span>Opportunity</span><strong>{{ pathway_profile.opportunity_type if pathway_profile.opportunity_type else "Not added" }}</strong></div>
+      <div class="summary-pair"><span>Certifications</span><strong>{{ pathway_profile.certifications_considering if pathway_profile.certifications_considering else "Not added" }}</strong></div>
+      <p class="summary-note">{{ pathway_profile.interests if pathway_profile.interests else "Your industries, timeline, and outreach comfort live here." }}</p>
       <a href="{{ url_for('pathway_profile') }}" class="text-link">Edit Pathway Profile</a>
     </article>
 
