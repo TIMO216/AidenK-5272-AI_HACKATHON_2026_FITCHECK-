@@ -5,7 +5,6 @@ from fitcheck.scoring import analyze_fit
 
 
 app = Flask(__name__)
-fitcheck_ai = FitCheckAI()
 
 
 SAMPLE_RESUME = """Jordan Lee
@@ -55,6 +54,10 @@ def fit_band_for_score(score: int) -> str:
     return "Stretch"
 
 
+def get_fitcheck_ai() -> FitCheckAI:
+    return FitCheckAI()
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     result = None
@@ -69,6 +72,7 @@ def index():
         experience_level = request.form.get("experience_level", experience_level)
         job_type = request.form.get("job_type", job_type)
         if resume_text and job_description:
+            fitcheck_ai = get_fitcheck_ai()
             result = analyze_fit(
                 resume_text,
                 job_description,
@@ -110,12 +114,13 @@ def index():
         job_description=job_description,
         experience_level=experience_level,
         job_type=job_type,
-        ai_enabled=fitcheck_ai.enabled,
+        ai_enabled=get_fitcheck_ai().enabled,
     )
 
 
 @app.post("/api/chat")
 def chat():
+    fitcheck_ai = get_fitcheck_ai()
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     context = payload.get("context") or {}
