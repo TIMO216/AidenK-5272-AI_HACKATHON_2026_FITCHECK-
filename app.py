@@ -413,17 +413,22 @@ def chat():
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     context = payload.get("context") or {}
+    screener = current_screener()
+    user = current_user()
 
     if not question:
         return jsonify({"error": "Question is required."}), 400
 
     answer = fitcheck_ai.answer_chat(
         question=question,
+        screener_text=plain_text_screener(screener),
+        student_name=user["full_name"] if user else "Student",
         score=int(context.get("score", 0)),
         fit_band=context.get("fit_band", "Stretch"),
         experience_level=context.get("experience_level", "Junior"),
         job_type=context.get("job_type", "Other"),
         gaps=context.get("gaps", []),
+        summary_lines=context.get("summary_lines", []),
     )
     return jsonify({"answer": answer})
 

@@ -7,6 +7,7 @@
   {% set strengths = result.strengths[:3] %}
   {% set suggestions = result.suggestions[:3] %}
   {% set fit_band = result.fit_band %}
+  {% set screener = current_screener %}
   {% if fit_band == "Strong Fit" %}
     {% set fit_class = "fit-strong" %}
   {% elif fit_band == "Moderate Fit" %}
@@ -15,13 +16,17 @@
     {% set fit_class = "fit-stretch" %}
   {% endif %}
 
-  <section class="workspace-header">
+  <section class="workspace-header workspace-header-with-chat">
     <div>
       <p class="eyebrow">Saved FitCheck</p>
       <h1>{{ fitcheck.title }}</h1>
-      <p>{{ fitcheck.company_hint if fitcheck.company_hint else fitcheck.job_type }} · Saved {{ fitcheck.created_at }}</p>
+      <p>{{ fitcheck.company_hint if fitcheck.company_hint else fitcheck.job_type }} | Saved {{ fitcheck.created_at }}</p>
     </div>
-    <a href="{{ url_for('new_fitcheck') }}" class="primary-button">Start New FitCheck</a>
+    <div class="workspace-actions">
+      <button class="primary-button" id="mentor-panel-toggle" type="button" aria-expanded="false" aria-controls="mentor-panel">
+        Ask FitCheck
+      </button>
+    </div>
   </section>
 
   <section class="results-stack">
@@ -55,7 +60,7 @@
     <section class="content-grid">
       <div class="main-column">
         <article class="card insight-card border-green">
-          <h2>Where You’re Strong</h2>
+          <h2>Where You're Strong</h2>
           <ul class="insight-list">
             {% for strength in strengths %}
               <li>{{ strength }}</li>
@@ -64,7 +69,7 @@
         </article>
 
         <article class="card insight-card border-red">
-          <h2>What’s Missing</h2>
+          <h2>What's Missing</h2>
           <ul class="gap-list">
             {% for gap in result.top_gaps[:3] %}
               <li class="gap-high">{{ gap }}</li>
@@ -81,7 +86,7 @@
                 <p>{{ suggestion.body }}</p>
                 <p class="resource-line">
                   <span class="resource-label">Concrete next step:</span>
-                  {{ suggestion.resource if suggestion.resource else "Create one focused project, class example, or networking move that makes this gap visible and measurable on the page." }}
+                  {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
                 </p>
               </article>
             {% endfor %}
@@ -92,11 +97,11 @@
           <h2>Are You Ready?</h2>
           <p class="verdict-copy">
             {% if score >= 80 %}
-              You’re ready. Apply. Focus on making the strongest proof easy to see.
+              You're ready. Apply. Focus on making your strongest proof easy to talk about when someone asks.
             {% elif score >= 60 %}
-              You’re close — one solid project or one stronger proof point could move this a lot.
+              You're close. One strong piece of proof in the right place could move this a lot.
             {% else %}
-              You’re a stretch for this role right now, but this is fixable. Use the plan above and come back stronger.
+              You're a stretch for this role right now, but this is fixable. Use the plan above and come back stronger.
             {% endif %}
           </p>
         </article>
@@ -115,44 +120,93 @@
 
   <div
     id="fitcheck-chat-context"
+    data-student-name="{{ current_user.full_name if current_user else 'Student' }}"
     data-score="{{ result.overall_score }}"
     data-fit-band="{{ fit_band }}"
     data-experience-level="{{ fitcheck.experience_level }}"
     data-job-type="{{ fitcheck.job_type }}"
     data-gaps='{{ result.top_gaps | tojson }}'
+    data-summary-lines='{{ result.coach_summary[:3] | tojson }}'
     data-ai-enabled="{{ 'true' if ai_enabled else 'false' }}"
   ></div>
 
-  <section class="chat-widget" id="chat-widget">
-    <button class="chat-toggle" id="chat-toggle" type="button">Ask FitCheck</button>
-    <div class="chat-panel" id="chat-panel" hidden>
-      <div class="chat-header">Ask FitCheck</div>
-      <div class="chat-messages" id="chat-messages">
-        <div class="chat-message bot">
-          Ask about this role, your score, or what you should do next. I already know the context from this FitCheck.
-        </div>
+  <aside class="mentor-panel" id="mentor-panel" aria-hidden="true">
+    <div class="mentor-panel-header">
+      <div>
+        <p class="mentor-panel-eyebrow">Ask FitCheck</p>
+        <h2>{{ current_user.full_name if current_user else "Student" }}</h2>
       </div>
-      <form class="chat-form" id="chat-form">
-        <textarea id="chat-input" class="chat-input" placeholder="Ask FitCheck..." rows="3" required></textarea>
-        <button type="submit" class="primary-button chat-submit">Send</button>
-      </form>
+      <button class="mentor-panel-close" id="mentor-panel-close" type="button" aria-label="Close Ask FitCheck panel">x</button>
     </div>
-  </section>
+
+    <div class="mentor-panel-body">
+      <section class="mentor-section">
+        <h3>Your screener</h3>
+        <div class="mentor-summary-grid">
+          <div class="mentor-summary-item"><span>Major</span><strong>{{ screener.major if screener else "Not added yet" }}</strong></div>
+          <div class="mentor-summary-item"><span>Year</span><strong>{{ screener.year if screener else "Not added yet" }}</strong></div>
+          <div class="mentor-summary-item"><span>Goal</span><strong>{{ screener.career_goals if screener and screener.career_goals else "Still figuring it out" }}</strong></div>
+        </div>
+        {% if screener and screener.unsure_about %}
+          <p class="mentor-note">{{ screener.unsure_about }}</p>
+        {% endif %}
+      </section>
+
+      <section class="mentor-section">
+        <h3>This FitCheck</h3>
+        <div class="mentor-summary-grid">
+          <div class="mentor-summary-item"><span>Score</span><strong>{{ result.overall_score }}/100</strong></div>
+          <div class="mentor-summary-item"><span>Fit</span><strong>{{ fit_band }}</strong></div>
+          <div class="mentor-summary-item"><span>Focus</span><strong>{{ fitcheck.job_type }}</strong></div>
+        </div>
+        <div class="mentor-result-summary">
+          {% for line in result.coach_summary[:3] %}
+            <p>{{ line }}</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="mentor-section mentor-chat-section">
+        <h3>Chat</h3>
+        <div class="chat-messages mentor-chat-messages" id="chat-messages">
+          <div class="chat-message bot">
+            I've got your screener and this FitCheck in front of me. Ask what you actually want help with and I'll keep it real.
+          </div>
+        </div>
+        <form class="chat-form mentor-chat-form" id="chat-form">
+          <textarea id="chat-input" class="chat-input" placeholder="Ask FitCheck..." rows="4" required></textarea>
+          <button type="submit" class="primary-button chat-submit">Send</button>
+        </form>
+      </section>
+    </div>
+  </aside>
 {% endblock %}
 
 {% block scripts %}
   <script>
-    const chatToggle = document.getElementById("chat-toggle");
-    const chatPanel = document.getElementById("chat-panel");
+    const panelToggle = document.getElementById("mentor-panel-toggle");
+    const panelClose = document.getElementById("mentor-panel-close");
+    const mentorPanel = document.getElementById("mentor-panel");
     const chatForm = document.getElementById("chat-form");
     const chatInput = document.getElementById("chat-input");
     const chatMessages = document.getElementById("chat-messages");
     const chatContextEl = document.getElementById("fitcheck-chat-context");
 
-    if (chatToggle && chatPanel) {
-      chatToggle.addEventListener("click", () => {
-        chatPanel.hidden = !chatPanel.hidden;
+    function setPanelOpenState(isOpen) {
+      if (!mentorPanel || !panelToggle) return;
+      mentorPanel.classList.toggle("is-open", isOpen);
+      mentorPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+      panelToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+
+    if (panelToggle && mentorPanel) {
+      panelToggle.addEventListener("click", () => {
+        setPanelOpenState(!mentorPanel.classList.contains("is-open"));
       });
+    }
+
+    if (panelClose) {
+      panelClose.addEventListener("click", () => setPanelOpenState(false));
     }
 
     function appendChatMessage(role, text) {
@@ -180,6 +234,8 @@
         appendChatMessage("bot", "Thinking...");
 
         const gaps = JSON.parse(chatContextEl.dataset.gaps || "[]");
+        const summaryLines = JSON.parse(chatContextEl.dataset.summaryLines || "[]");
+
         try {
           const response = await fetch("/api/chat", {
             method: "POST",
@@ -192,6 +248,7 @@
                 experience_level: chatContextEl.dataset.experienceLevel || "Junior",
                 job_type: chatContextEl.dataset.jobType || "Other",
                 gaps,
+                summary_lines: summaryLines,
               },
             }),
           });

@@ -143,27 +143,33 @@ class FitCheckAI:
         self,
         *,
         question: str,
+        screener_text: str,
+        student_name: str,
         score: int,
         fit_band: str,
         experience_level: str,
         job_type: str,
         gaps: list[str],
+        summary_lines: list[str],
     ) -> str:
         if not self.enabled:
             return "FitCheck chat is not available yet because the OpenAI API key is not configured."
 
         prompt = (
             "You are answering a student inside the Ask FitCheck chat widget.\n"
-            "You already know their score, fit band, experience level, and gaps.\n"
+            "You already know their screener, score, fit band, experience level, and gaps.\n"
             "Maximum 3 sentences.\n"
             "If the student is just being conversational, respond like a normal human mentor and do not give advice.\n"
             "Only give advice if they clearly ask for help, analysis, feedback, what to fix, or whether they should apply.\n"
             "No corporate language. No fluff. No shaming.\n"
+            f"Student name: {student_name}\n"
+            f"Student screener:\n{screener_text}\n"
             f"Student score: {score}\n"
             f"Fit band: {fit_band}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
             f"Known gaps: {json.dumps(gaps)}\n"
+            f"FitCheck summary: {json.dumps(summary_lines)}\n"
             f"Student question: {question}"
         )
 
