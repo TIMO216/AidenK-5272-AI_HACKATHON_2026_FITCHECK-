@@ -308,7 +308,7 @@ def score_skills_match(resume: str, resume_bullets: list[str], requirements: lis
 
 def score_experience_relevance(resume: str, resume_bullets: list[str], requirements: list[dict]) -> dict:
     if not resume_bullets:
-        return empty_category("No experience bullets were found, so relevance cannot be supported.", 20)
+        return empty_category("No clear experience examples were found, so relevance cannot be supported yet.", 20)
 
     role_terms = {req["skill"] for req in requirements}
     relevant_bullets = []
@@ -336,12 +336,12 @@ def score_experience_relevance(resume: str, resume_bullets: list[str], requireme
     return {
         "score": max(12, min(safe_round(score), 92)),
         "summary": (
-            f"{len(relevant_bullets)} of {len(resume_bullets)} bullets actually line up with this role, "
+            f"{len(relevant_bullets)} of {len(resume_bullets)} experience examples actually line up with this role, "
             f"and the best examples hit {top_overlap} direct requirement signals."
         ),
         "details": [
             {
-                "skill": f"Relevant bullet {index + 1}",
+                "skill": f"Relevant example {index + 1}",
                 "strength": min(100, 35 + overlap * 18 + safe_round(evidence_quality_factor(bullet) * 25)),
                 "evidence": trim_snippet(bullet),
             }
@@ -352,7 +352,7 @@ def score_experience_relevance(resume: str, resume_bullets: list[str], requireme
 
 def score_evidence_quality(resume_bullets: list[str], requirements: list[dict]) -> dict:
     if not resume_bullets:
-        return empty_category("No achievement bullets were found to evaluate evidence quality.", 15)
+        return empty_category("No clear achievement examples were found to evaluate evidence quality.", 15)
 
     bullet_scores = []
     req_terms = {req["skill"] for req in requirements}
@@ -367,7 +367,7 @@ def score_evidence_quality(resume_bullets: list[str], requirements: list[dict]) 
 
     return {
         "score": score,
-        "summary": "This score checks whether your bullets prove what you did, who it helped, and what changed because of your work.",
+        "summary": "This score checks whether your examples prove what you did, who it helped, and what changed because of your work.",
         "details": [
             {
                 "skill": "High-quality evidence" if factor >= 0.65 else "Weak evidence",
@@ -429,7 +429,7 @@ def find_skill_evidence(skill: str, resume: str, bullets: list[str]) -> dict:
     if exact_match:
         return {
             "strength": 0.45,
-            "snippet": "Mentioned in resume, but not backed by a concrete bullet.",
+            "snippet": "Mentioned, but not backed by a concrete example.",
         }
     return {
         "strength": 0.0,
@@ -517,8 +517,8 @@ def build_suggestions(
     if category_results["experience_relevance"]["score"] < 60:
         suggestions.append(
             {
-                "title": "Make role-relevant work easier to spot",
-                "body": "Move the bullets that best match this job closer to the top of each experience entry and rewrite them to mirror the job’s tasks, not just the tool list.",
+                "title": "Build more role-relevant proof",
+                "body": "The experience is still a little too far from what this role actually does. The next move is to get one hands-on example that clearly overlaps with the job.",
                 "priority": "High",
             }
         )
@@ -526,8 +526,8 @@ def build_suggestions(
     if category_results["evidence_quality"]["score"] < 65:
         suggestions.append(
             {
-                "title": "Add outcomes to weak bullets",
-                "body": "Several bullets mention tools without proving impact. Add scope, speed, accuracy, adoption, or time-saved metrics so each line shows what changed because of your work.",
+                "title": "Build stronger proof",
+                "body": "Right now the proof is still thinner than it needs to be. Focus on one project, class result, lab outcome, or real-world example that shows what changed because of your work.",
                 "priority": "Medium",
             }
         )
@@ -542,21 +542,21 @@ def build_skill_specific_suggestion(skill: str, jd_context: str, role_family: Op
         prefix = f"You mention {skill}, but the proof is still thin."
 
     action_map = {
-        "python": "Name the script, service, or automation you built in Python and what it delivered.",
-        "flask": "Call out the route, API, or internal tool you built with Flask instead of listing Flask only in the skills section.",
-        "sql": "Add a bullet describing the query, reporting workflow, or database task you handled with SQL.",
-        "postgresql": "Mention the schema, dashboard, or data model work you did in PostgreSQL.",
-        "rest api": "Describe the endpoint or integration you implemented and who used it.",
-        "unit test": "State what you tested, which bugs it prevented, or how coverage improved.",
-        "dashboard": "Show the audience, metric, and decision supported by the dashboard.",
-        "data pipeline": "Explain the source-to-output flow and the reliability or time savings it created.",
-        "stakeholder": "Mention the stakeholders you worked with and what decision or demo came out of that collaboration.",
-        "presentation": "Include what you presented, to whom, and why it mattered.",
-        "documentation": "Add the technical docs, runbooks, or design notes you wrote and how they were used.",
+        "python": "Build or finish one Python example you can talk through clearly, like a script, automation, or small app.",
+        "flask": "Create one small Flask app or internal tool so you have real experience using it, not just familiarity.",
+        "sql": "Practice SQL in a real setting, like a project, dataset, or reporting task where you can explain the question and result.",
+        "postgresql": "Use PostgreSQL in a small project where you can talk about the data model and why it was set up that way.",
+        "rest api": "Build or connect to one API so you can explain what data moved and why it mattered.",
+        "unit test": "Write tests for one project you already have so you can talk about how you checked reliability.",
+        "dashboard": "Create one dashboard tied to a real question so you can explain the decision it supports.",
+        "data pipeline": "Build one small end-to-end data flow so you can explain where data came from and what changed at the end.",
+        "stakeholder": "Get one experience where you had to align with another person or team and explain what decision came out of it.",
+        "presentation": "Practice presenting one project or analysis clearly to another person, class, or mentor.",
+        "documentation": "Write one clear setup guide, walkthrough, or project explanation for something you built.",
     }
     action = action_map.get(
         skill,
-        f"Add a bullet that shows where you used {skill} in a project, internship, class, or campus role and what measurable result it produced.",
+        f"Get one concrete example of {skill} in a project, internship, class, campus role, or research setting so you can talk about it with confidence.",
     )
     context = f" In this role, it shows up in: \"{trim_snippet(jd_context)}\"." if jd_context else ""
     role_nudge = ""
@@ -603,7 +603,7 @@ def extract_top_gaps(category_results: dict, job_requirements: list[dict]) -> li
     if category_results["experience_relevance"]["score"] < 60:
         gaps.append("role-relevant experience is not obvious enough on the page")
     if category_results["evidence_quality"]["score"] < 65:
-        gaps.append("bullets mention work but do not prove impact strongly enough")
+        gaps.append("the current examples do not prove impact strongly enough")
     if category_results["role_specific_signals"]["score"] < 60:
         gaps.append("role-specific signals are too thin for this type of job")
 
@@ -634,9 +634,9 @@ def build_strengths(category_results: dict) -> list[str]:
         strengths.append("Strong evidence for " + ", ".join(strong_skills[:3]) + ".")
     strongest_experience = category_results["experience_relevance"]["details"][:1]
     if strongest_experience:
-        strengths.append("Most relevant experience bullet: " + strongest_experience[0]["evidence"])
+        strengths.append("Most relevant experience example: " + strongest_experience[0]["evidence"])
     if category_results["evidence_quality"]["score"] >= 70:
-        strengths.append("Achievement bullets generally include action and outcomes instead of only tool names.")
+        strengths.append("Your strongest examples generally include action and outcomes instead of only tool names.")
     if not strengths:
         strengths.append("Resume shows some overlap with the role, but needs stronger proof in the highest-priority areas.")
     return strengths[:3]

@@ -47,7 +47,7 @@ class FitCheckAI:
             "- one concrete project, networking, professor outreach, lab, certification, campus resource, or portfolio next step\n"
             "Reference the actual job description language where relevant.\n"
             "Do not use corporate language. Do not be mean. Do not be vague.\n"
-            "Do not give resume-editing advice.\n"
+            "Do not give editing advice, writing critique, or formatting suggestions.\n"
             f"Student screener:\n{screener_text}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
@@ -64,6 +64,7 @@ class FitCheckAI:
                 "Do not repeat old advice that was already addressed.\n"
                 "Do not invent new flaws.\n"
                 "Focus only on the 1 to 2 remaining meaningful gaps.\n"
+                "Do not turn this into critique about wording, structure, or presentation.\n"
             )
 
         schema = {
@@ -138,6 +139,7 @@ class FitCheckAI:
                 "Do not repeat old advice.\n"
                 "Do not invent new flaws.\n"
                 "If the student is now competitive, say so and stop criticizing.\n"
+                "Do not shift into critique about wording, formatting, or presentation.\n"
             )
 
         schema = {
@@ -190,6 +192,7 @@ class FitCheckAI:
             "If the student is just being conversational, respond like a normal human mentor and do not give advice.\n"
             "Only give advice if they clearly ask for help, analysis, feedback, what to fix, or whether they should apply.\n"
             "No corporate language. No fluff. No shaming.\n"
+            "Do not act like an editor, grader, or writing coach.\n"
             f"Student name: {student_name}\n"
             f"Student screener:\n{screener_text}\n"
             f"Student score: {score}\n"
@@ -208,6 +211,7 @@ class FitCheckAI:
                 f"What's left: {json.dumps(comparison.get('whats_left', []))}\n"
                 "Encourage healthy progress.\n"
                 "Avoid perfectionism, overwork, or endless editing.\n"
+                "Do not shift into critique about wording, structure, formatting, or presentation.\n"
             )
 
         try:
