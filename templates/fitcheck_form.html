@@ -7,16 +7,18 @@
     <p class="eyebrow">Step 2</p>
     <h1>Start a new FitCheck</h1>
     <p>
-      Paste your resume and a job description. FitCheck will score the role, explain the gaps, and save the result back to your workspace.
+      Add your resume and a job description. FitCheck will review them, show what stands out, and save the result back to your workspace.
     </p>
   </section>
 
   <section class="card form-card">
-    <form method="post" class="fit-form" id="fit-form">
+    <form method="post" class="fit-form" id="fit-form" enctype="multipart/form-data">
       <div class="form-grid two-up">
         <div class="field">
           <label for="resume_text">Resume</label>
-          <textarea id="resume_text" name="resume_text" rows="18" required>{{ resume_text }}</textarea>
+          <input id="resume_pdf" name="resume_pdf" type="file" accept="application/pdf">
+          <p class="helper-copy">Upload a PDF resume, or paste your resume below. If you do both, we'll use the PDF.</p>
+          <textarea id="resume_text" name="resume_text" rows="18">{{ resume_text }}</textarea>
         </div>
         <div class="field">
           <label for="job_description">Job Description</label>
@@ -44,9 +46,9 @@
   <div class="loading-overlay" id="loading-overlay" hidden>
     <div class="loading-card">
       <div class="spinner" aria-hidden="true"></div>
-      <p class="loading-message is-visible">Parsing job requirements...</p>
-      <p class="loading-message">Analyzing your background...</p>
-      <p class="loading-message">Calculating your fit score...</p>
+      <p class="loading-message is-visible">We're reviewing your resume...</p>
+      <p class="loading-message">We're comparing your experience to the role...</p>
+      <p class="loading-message">We're putting your fit score together...</p>
     </div>
   </div>
 {% endblock %}

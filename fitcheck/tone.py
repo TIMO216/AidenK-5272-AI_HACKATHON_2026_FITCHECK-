@@ -64,7 +64,8 @@ Assume the backend has already cleaned the inputs and given you:
 - A plain-text resume
 - A plain-text job description
 
-Use the screener only to adjust expectations and personalize the plan and tone.
+Use the screener only to adjust expectations, personalize the tone, shape What To Do Next, and shape Are You Ready.
+The screener should influence how ambitious or immediate the plan sounds, but it must never change the scoring standards.
 Do not raise or lower standards because of school name, prestige, or background.
 This is part of a saved workspace, not a throwaway chat, so the output should feel useful when reopened later.
 

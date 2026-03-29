@@ -2,12 +2,14 @@ import json
 import os
 from functools import wraps
 
+import pdfplumber
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 
 from fitcheck.ai import FitCheckAI
 from fitcheck.scoring import analyze_fit
 from fitcheck.storage import (
     create_fitcheck,
+    delete_fitcheck,
     get_fitcheck,
     get_or_create_user,
     get_screener,
@@ -72,6 +74,12 @@ def fit_band_for_score(score: int) -> str:
 
 def get_fitcheck_ai() -> FitCheckAI:
     return FitCheckAI()
+
+
+def extract_resume_text_from_pdf(uploaded_file) -> str:
+    with pdfplumber.open(uploaded_file) as pdf:
+        pages = [(page.extract_text() or "").strip() for page in pdf.pages]
+    return "\n".join(page for page in pages if page).strip()
 
 
 def current_user():
@@ -194,22 +202,41 @@ def home():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/home")
+@screener_required
+def workspace_home():
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    errors = {}
+    form_values = {"full_name": "", "email": ""}
+
     if request.method == "POST":
         full_name = request.form.get("full_name", "").strip()
         email = request.form.get("email", "").strip()
-        if not full_name or not email:
-            flash("Enter your name and email to open your FitCheck workspace.", "error")
-            return render_template("login.html")
+        form_values = {"full_name": full_name, "email": email}
+
+        if len(full_name.split()) < 2:
+            errors["full_name"] = "Enter your first and last name."
+        if "@" not in email:
+            errors["email"] = "Enter a valid school email."
+        elif not email.lower().endswith(".edu"):
+            errors["email"] = "Use your .edu email."
+
+        if errors:
+            return render_template("login.html", errors=errors, form_values=form_values)
 
         user = get_or_create_user(full_name, email)
         session["user_id"] = int(user["id"])
+        session["name"] = full_name
+        session["email"] = email.lower()
         if get_screener(int(user["id"])) is None:
             return redirect(url_for("screener"))
         return redirect(url_for("dashboard"))
 
-    return render_template("login.html")
+    return render_template("login.html", errors=errors, form_values=form_values)
 
 
 @app.route("/logout")
@@ -270,12 +297,18 @@ def dashboard():
     )
 
 
+@app.route("/new", methods=["GET", "POST"])
+@screener_required
+def new_fitcheck_alias():
+    return new_fitcheck()
+
+
 @app.route("/fitchecks/new", methods=["GET", "POST"])
 @screener_required
 def new_fitcheck():
     screener = current_screener()
-    resume_text = SAMPLE_RESUME
-    job_description = SAMPLE_JOB_DESCRIPTION
+    resume_text = ""
+    job_description = ""
     job_type = "Software and Engineering"
 
     if request.method == "POST":
@@ -283,9 +316,34 @@ def new_fitcheck():
         job_description = request.form.get("job_description", "").strip()
         job_type = request.form.get("job_type", job_type)
         experience_level = screener["year"]
+        uploaded_resume = request.files.get("resume_pdf")
+
+        if uploaded_resume and uploaded_resume.filename:
+            try:
+                extracted_text = extract_resume_text_from_pdf(uploaded_resume)
+                if extracted_text:
+                    resume_text = extracted_text
+                else:
+                    flash("We couldn't read this PDF. Please paste your resume instead.", "error")
+                    return render_template(
+                        "fitcheck_form.html",
+                        screener=screener,
+                        resume_text=request.form.get("resume_text", ""),
+                        job_description=job_description,
+                        job_type=job_type,
+                    )
+            except Exception:
+                flash("We couldn't read this PDF. Please paste your resume instead.", "error")
+                return render_template(
+                    "fitcheck_form.html",
+                    screener=screener,
+                    resume_text=request.form.get("resume_text", ""),
+                    job_description=job_description,
+                    job_type=job_type,
+                )
 
         if not resume_text or not job_description:
-            flash("Paste both a resume and a job description before running FitCheck.", "error")
+            flash("Add your resume and the job description before you run FitCheck.", "error")
             return render_template(
                 "fitcheck_form.html",
                 screener=screener,
@@ -321,6 +379,13 @@ def new_fitcheck():
         job_description=job_description,
         job_type=job_type,
     )
+
+
+@app.route("/delete/<int:fitcheck_id>", methods=["POST"])
+@screener_required
+def delete_fitcheck_route(fitcheck_id: int):
+    delete_fitcheck(int(current_user()["id"]), fitcheck_id)
+    return redirect(url_for("workspace_home"))
 
 
 @app.route("/fitchecks/<int:fitcheck_id>")

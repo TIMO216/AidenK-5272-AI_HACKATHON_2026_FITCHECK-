@@ -189,6 +189,20 @@ a {
   font-weight: 600;
 }
 
+.field-error {
+  margin: 8px 0 0;
+  color: var(--red);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.helper-copy {
+  margin: 10px 0 10px;
+  color: var(--gray);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 input,
 select,
 textarea {
@@ -323,6 +337,34 @@ textarea:focus {
   border: 1px solid #eef2f5;
 }
 
+.project-row-main {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.project-create-card {
+  align-items: center;
+  gap: 16px;
+  border: 1px dashed rgba(13, 148, 136, 0.28);
+  background: linear-gradient(180deg, #fbfffe 0%, #f5fbfa 100%);
+}
+
+.create-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--teal);
+  font-size: 1.8rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .project-row strong {
   display: block;
   color: var(--navy);
@@ -338,6 +380,27 @@ textarea:focus {
   display: grid;
   justify-items: end;
   gap: 8px;
+}
+
+.delete-form {
+  flex-shrink: 0;
+}
+
+.delete-button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #fff3f2;
+  color: #b91c1c;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.delete-button:hover {
+  background: #ffe5e2;
+  transform: translateY(-1px);
 }
 
 .score-badge {
@@ -733,6 +796,12 @@ textarea:focus {
   }
 
   .project-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .project-row-main {
+    width: 100%;
     flex-direction: column;
     align-items: flex-start;
   }

@@ -208,3 +208,14 @@ def get_fitcheck(user_id: int, fitcheck_id: int) -> Optional[dict[str, Any]]:
     payload = dict(row)
     payload["result"] = json.loads(payload["result_json"])
     return payload
+
+
+def delete_fitcheck(user_id: int, fitcheck_id: int) -> None:
+    connection = connect_db()
+    cursor = connection.cursor()
+    cursor.execute(
+        "DELETE FROM fitchecks WHERE id = ? AND user_id = ?",
+        (fitcheck_id, user_id),
+    )
+    connection.commit()
+    connection.close()
