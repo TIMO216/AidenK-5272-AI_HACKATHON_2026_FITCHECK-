@@ -4,7 +4,11 @@ from typing import Any
 
 from openai import OpenAI
 
-from fitcheck.tone import FITCHECK_CHATBOT_SYSTEM_PROMPT, FITCHECK_SYSTEM_PROMPT
+from fitcheck.tone import (
+    FITCHECK_ANALYSIS_SYSTEM_PROMPT,
+    FITCHECK_CHATBOT_SYSTEM_PROMPT,
+    FITCHECK_SYSTEM_PROMPT,
+)
 
 
 MODEL_NAME = "gpt-4o"
@@ -173,7 +177,7 @@ class FitCheckAI:
     def _create_structured_response(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
         response = self.client.responses.create(
             model=MODEL_NAME,
-            instructions=FITCHECK_SYSTEM_PROMPT,
+            instructions=FITCHECK_ANALYSIS_SYSTEM_PROMPT,
             input=prompt,
             text={"format": schema},
             max_output_tokens=700,
