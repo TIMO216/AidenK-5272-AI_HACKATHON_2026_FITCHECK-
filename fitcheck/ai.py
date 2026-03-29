@@ -4,7 +4,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from fitcheck.tone import FITCHECK_SYSTEM_PROMPT
+from fitcheck.tone import FITCHECK_CHATBOT_SYSTEM_PROMPT, FITCHECK_SYSTEM_PROMPT
 
 
 MODEL_NAME = "gpt-4o"
@@ -146,10 +146,11 @@ class FitCheckAI:
 
         prompt = (
             "You are answering a student inside the Ask FitCheck chat widget.\n"
-            "Answer like a mentor who already knows their situation.\n"
+            "You already know their score, fit band, experience level, and gaps.\n"
             "Maximum 3 sentences.\n"
+            "If the student is just being conversational, respond like a normal human mentor and do not give advice.\n"
+            "Only give advice if they clearly ask for help, analysis, feedback, what to fix, or whether they should apply.\n"
             "No corporate language. No fluff. No shaming.\n"
-            "Give the student the truth and a next move.\n"
             f"Student score: {score}\n"
             f"Fit band: {fit_band}\n"
             f"Experience level: {experience_level}\n"
@@ -161,7 +162,7 @@ class FitCheckAI:
         try:
             response = self.client.responses.create(
                 model=MODEL_NAME,
-                instructions=FITCHECK_SYSTEM_PROMPT,
+                instructions=FITCHECK_CHATBOT_SYSTEM_PROMPT,
                 input=prompt,
                 max_output_tokens=220,
             )
