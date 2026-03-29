@@ -156,15 +156,7 @@
                         <p>{{ suggestion.body }}</p>
                         <p class="resource-line">
                           <span class="resource-label">Concrete next step:</span>
-                          {% if 'Python' in skill_name or 'Flask' in skill_name or 'API' in skill_name or 'SQL' in skill_name or 'Postgresql' in skill_name %}
-                            Build a small portfolio project tied to this job, such as an internal dashboard, workflow tool, or API-backed app, and add one quantified bullet from it.
-                          {% elif 'Dashboard' in skill_name or 'Analytics' in skill_name or 'Data' in skill_name %}
-                            Create a short analysis project with a dashboard and a one-page writeup that shows a decision your work supports.
-                          {% elif 'Stakeholder' in skill_name or 'Presentation' in skill_name or 'Documentation' in skill_name %}
-                            Turn a recent class, internship, or campus project into a concise case study that shows your communication and decision-making impact.
-                          {% else %}
-                            Create one focused project, class example, or internship bullet that makes this requirement visible and measurable on the page.
-                          {% endif %}
+                          {{ suggestion.resource if suggestion.resource else "Create one focused project, class example, or networking move that makes this gap visible and measurable on the page." }}
                         </p>
                       </article>
                     {% endfor %}
@@ -192,6 +184,34 @@
       {% endif %}
     </main>
 
+    {% if result %}
+      <div
+        id="fitcheck-chat-context"
+        data-score="{{ result.overall_score }}"
+        data-fit-band="{{ result.fit_band if result.fit_band else fit_band }}"
+        data-experience-level="{{ experience_level }}"
+        data-job-type="{{ job_type }}"
+        data-gaps='{{ result.top_gaps | tojson }}'
+        data-ai-enabled="{{ 'true' if ai_enabled else 'false' }}"
+      ></div>
+
+      <section class="chat-widget" id="chat-widget">
+        <button class="chat-toggle" id="chat-toggle" type="button">Ask FitCheck</button>
+        <div class="chat-panel" id="chat-panel" hidden>
+          <div class="chat-header">Ask FitCheck</div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-message bot">
+              Ask about your score, your gaps, or what to do next. I will answer based on this exact fit check.
+            </div>
+          </div>
+          <form class="chat-form" id="chat-form">
+            <textarea id="chat-input" class="chat-input" placeholder="Ask what to do next..." rows="3" required></textarea>
+            <button type="submit" class="primary-button chat-submit">Send</button>
+          </form>
+        </div>
+      </section>
+    {% endif %}
+
     <div class="loading-overlay" id="loading-overlay" hidden>
       <div class="loading-card">
         <div class="spinner" aria-hidden="true"></div>
@@ -205,6 +225,12 @@
       const form = document.getElementById("fit-form");
       const overlay = document.getElementById("loading-overlay");
       const messages = overlay ? Array.from(overlay.querySelectorAll(".loading-message")) : [];
+      const chatToggle = document.getElementById("chat-toggle");
+      const chatPanel = document.getElementById("chat-panel");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const chatMessages = document.getElementById("chat-messages");
+      const chatContextEl = document.getElementById("fitcheck-chat-context");
 
       if (form && overlay) {
         form.addEventListener("submit", () => {
@@ -220,6 +246,75 @@
               window.clearInterval(intervalId);
             }
           }, 1100);
+        });
+      }
+
+      if (chatToggle && chatPanel) {
+        chatToggle.addEventListener("click", () => {
+          chatPanel.hidden = !chatPanel.hidden;
+        });
+      }
+
+      function appendChatMessage(role, text) {
+        if (!chatMessages) {
+          return;
+        }
+        const div = document.createElement("div");
+        div.className = `chat-message ${role}`;
+        div.textContent = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      if (chatForm && chatInput && chatContextEl) {
+        chatForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const question = chatInput.value.trim();
+          if (!question) {
+            return;
+          }
+
+          appendChatMessage("user", question);
+          chatInput.value = "";
+
+          if (chatContextEl.dataset.aiEnabled !== "true") {
+            appendChatMessage("bot", "Ask FitCheck is not active yet because the OpenAI API key is missing in this environment.");
+            return;
+          }
+
+          appendChatMessage("bot", "Thinking...");
+
+          const gaps = JSON.parse(chatContextEl.dataset.gaps || "[]");
+          const payload = {
+            question,
+            context: {
+              score: Number(chatContextEl.dataset.score || "0"),
+              fit_band: chatContextEl.dataset.fitBand || "Stretch",
+              experience_level: chatContextEl.dataset.experienceLevel || "Junior",
+              job_type: chatContextEl.dataset.jobType || "Other",
+              gaps,
+            },
+          };
+
+          try {
+            const response = await fetch("/api/chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+            chatMessages.removeChild(chatMessages.lastElementChild);
+            appendChatMessage("bot", data.answer || "I hit a snag trying to answer that. Try asking again in one sentence.");
+          } catch (error) {
+            if (chatMessages && chatMessages.lastElementChild) {
+              chatMessages.removeChild(chatMessages.lastElementChild);
+            }
+            appendChatMessage("bot", "I hit a snag trying to answer that. Try again in a moment.");
+          }
         });
       }
     </script>

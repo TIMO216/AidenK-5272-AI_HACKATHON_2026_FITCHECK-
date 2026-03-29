@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 
+from fitcheck.ai import FitCheckAI
 from fitcheck.scoring import analyze_fit
 
 
 app = Flask(__name__)
+fitcheck_ai = FitCheckAI()
 
 
 SAMPLE_RESUME = """Jordan Lee
@@ -45,6 +47,14 @@ Preferred:
 """
 
 
+def fit_band_for_score(score: int) -> str:
+    if score >= 80:
+        return "Strong Fit"
+    if score >= 60:
+        return "Moderate Fit"
+    return "Stretch"
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     result = None
@@ -65,6 +75,33 @@ def index():
                 experience_level=experience_level,
                 job_type=job_type,
             )
+            fit_band = fit_band_for_score(result["overall_score"])
+            ai_summary = fitcheck_ai.generate_summary(
+                final_score=result["overall_score"],
+                fit_band=fit_band,
+                experience_level=experience_level,
+                top_gaps=result["top_gaps"],
+            )
+            if ai_summary:
+                result["coach_summary"] = ai_summary
+
+            ai_suggestions = fitcheck_ai.generate_suggestions(
+                job_description=job_description,
+                experience_level=experience_level,
+                job_type=job_type,
+                top_gaps=result["top_gaps"],
+            )
+            if ai_suggestions:
+                result["suggestions"] = [
+                    {
+                        "title": item["title"],
+                        "body": item["body"],
+                        "resource": item["resource"],
+                        "priority": "High",
+                    }
+                    for item in ai_suggestions
+                ]
+            result["fit_band"] = fit_band
 
     return render_template(
         "index.html",
@@ -73,7 +110,28 @@ def index():
         job_description=job_description,
         experience_level=experience_level,
         job_type=job_type,
+        ai_enabled=fitcheck_ai.enabled,
     )
+
+
+@app.post("/api/chat")
+def chat():
+    payload = request.get_json(silent=True) or {}
+    question = (payload.get("question") or "").strip()
+    context = payload.get("context") or {}
+
+    if not question:
+        return jsonify({"error": "Question is required."}), 400
+
+    answer = fitcheck_ai.answer_chat(
+        question=question,
+        score=int(context.get("score", 0)),
+        fit_band=context.get("fit_band", "Stretch"),
+        experience_level=context.get("experience_level", "Junior"),
+        job_type=context.get("job_type", "Other"),
+        gaps=context.get("gaps", []),
+    )
+    return jsonify({"answer": answer})
 
 
 if __name__ == "__main__":

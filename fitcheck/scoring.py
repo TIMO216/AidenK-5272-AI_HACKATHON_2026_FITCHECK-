@@ -154,6 +154,7 @@ def analyze_fit(
         ),
         "strengths": build_strengths(category_results),
         "top_requirements": [req["skill"] for req in jd_requirements[:8]],
+        "top_gaps": extract_top_gaps(category_results, jd_requirements),
         "coach_summary": build_coach_summary(
             weighted_score=round(weighted_score),
             category_results=category_results,
@@ -587,6 +588,39 @@ def build_coach_summary(weighted_score: int, category_results: dict, experience_
     line_two = level_coaching_line(experience_level)
     line_three = f"Your biggest weakness right now is {weakest_labels[weakest_category]}. {job_type_coaching_line(job_type)}"
     return [line_one, line_two, line_three]
+
+
+def extract_top_gaps(category_results: dict, job_requirements: list[dict]) -> list[str]:
+    gaps = []
+
+    weak_skill_details = [
+        detail["skill"]
+        for detail in category_results["skills_match"]["details"]
+        if detail["strength"] < 55
+    ]
+    gaps.extend(weak_skill_details[:3])
+
+    if category_results["experience_relevance"]["score"] < 60:
+        gaps.append("role-relevant experience is not obvious enough on the page")
+    if category_results["evidence_quality"]["score"] < 65:
+        gaps.append("bullets mention work but do not prove impact strongly enough")
+    if category_results["role_specific_signals"]["score"] < 60:
+        gaps.append("role-specific signals are too thin for this type of job")
+
+    for requirement in job_requirements[:5]:
+        titled = requirement["skill"].title()
+        if titled not in gaps:
+            gaps.append(titled)
+
+    deduped = []
+    seen = set()
+    for gap in gaps:
+        normalized = gap.lower()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(gap)
+    return deduped[:3]
 
 
 def build_strengths(category_results: dict) -> list[str]:
