@@ -206,20 +206,6 @@ def apply_green_light_state(result: dict, job_type: str) -> dict:
     return result
 
 
-def fallback_resubmit_suggestions(remaining_gaps: list[str], job_type: str) -> list[dict]:
-    suggestions = []
-    for gap in remaining_gaps[:2]:
-        suggestions.append(
-            {
-                "title": gap,
-                "body": f"This is still one of the last meaningful things holding you back for {job_type.lower()} roles. Keep your next move focused and realistic.",
-                "resource": "Pick one concrete action this week that gives you stronger proof here without overloading yourself.",
-                "priority": "High",
-            }
-        )
-    return suggestions
-
-
 def run_fitcheck_analysis(
     *,
     pathway_profile_text: str,
@@ -278,8 +264,6 @@ def run_fitcheck_analysis(
                 }
                 for item in ai_suggestions
             ]
-        elif previous_fitcheck is not None:
-            result["suggestions"] = fallback_resubmit_suggestions(result["top_gaps"], job_type)
 
     return result
 

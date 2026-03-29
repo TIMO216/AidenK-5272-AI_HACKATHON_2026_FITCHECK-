@@ -162,10 +162,12 @@
                   <article class="suggestion-card">
                     <p><strong>{{ suggestion.title }}</strong></p>
                     <p>{{ suggestion.body }}</p>
-                    <p class="resource-line">
-                      <span class="resource-label">What would actually move you forward:</span>
-                      {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
-                    </p>
+                    {% if suggestion.resource %}
+                      <p class="resource-line">
+                        <span class="resource-label">What would actually move you forward:</span>
+                        {{ suggestion.resource }}
+                      </p>
+                    {% endif %}
                   </article>
                 {% endfor %}
               </div>
