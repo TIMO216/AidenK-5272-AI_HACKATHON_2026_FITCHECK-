@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}FitCheck{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="nav-inner">
+        <a class="brand-lockup" href="{{ url_for('home') }}">
+          <div class="brand-mark">FC</div>
+          <div>
+            <div class="brand">FitCheck</div>
+            <div class="brand-subtitle">Know where you stand before you apply</div>
+          </div>
+        </a>
+        <div class="nav-links">
+          {% if current_user %}
+            <a href="{{ url_for('dashboard') }}">Workspace</a>
+            <a href="{{ url_for('new_fitcheck') }}">New FitCheck</a>
+            <a href="{{ url_for('screener') }}">Screener</a>
+            <a href="{{ url_for('logout') }}">Log out</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <main class="app-shell">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <section class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

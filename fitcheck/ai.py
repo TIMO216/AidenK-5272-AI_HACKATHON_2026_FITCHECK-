@@ -26,6 +26,7 @@ class FitCheckAI:
     def generate_suggestions(
         self,
         *,
+        screener_text: str,
         job_description: str,
         experience_level: str,
         job_type: str,
@@ -44,6 +45,7 @@ class FitCheckAI:
             "- one concrete project, networking, professor outreach, lab, or portfolio next step\n"
             "Reference the actual job description language where relevant.\n"
             "Do not use corporate language. Do not be mean. Do not be vague.\n"
+            f"Student screener:\n{screener_text}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
             f"Top rule-based gaps: {json.dumps(top_gaps)}\n"
@@ -90,6 +92,7 @@ class FitCheckAI:
         *,
         final_score: int,
         fit_band: str,
+        screener_text: str,
         experience_level: str,
         top_gaps: list[str],
     ) -> list[str]:
@@ -103,6 +106,7 @@ class FitCheckAI:
             "Mention whether this student is strong, moderate, or a stretch for this role.\n"
             "Use their timing and experience level realistically.\n"
             "No corporate language.\n"
+            f"Student screener:\n{screener_text}\n"
             f"Final score: {final_score}\n"
             f"Fit band: {fit_band}\n"
             f"Experience level: {experience_level}\n"

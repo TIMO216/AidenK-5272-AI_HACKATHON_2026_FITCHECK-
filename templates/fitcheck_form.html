@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}New FitCheck{% endblock %}
+
+{% block content %}
+  <section class="page-header">
+    <p class="eyebrow">Step 2</p>
+    <h1>Start a new FitCheck</h1>
+    <p>
+      Paste your resume and a job description. FitCheck will score the role, explain the gaps, and save the result back to your workspace.
+    </p>
+  </section>
+
+  <section class="card form-card">
+    <form method="post" class="fit-form" id="fit-form">
+      <div class="form-grid two-up">
+        <div class="field">
+          <label for="resume_text">Resume</label>
+          <textarea id="resume_text" name="resume_text" rows="18" required>{{ resume_text }}</textarea>
+        </div>
+        <div class="field">
+          <label for="job_description">Job Description</label>
+          <textarea id="job_description" name="job_description" rows="18" required>{{ job_description }}</textarea>
+        </div>
+      </div>
+      <div class="form-grid two-up">
+        <div class="field">
+          <label>Experience Level</label>
+          <div class="static-pill">{{ screener.year }}</div>
+        </div>
+        <div class="field">
+          <label for="job_type">Job Type</label>
+          <select id="job_type" name="job_type" required>
+            {% for option in ["Data and Analytics","Software and Engineering","HR and People","Business and Operations","Marketing and Communications","Research and Science","Other"] %}
+              <option value="{{ option }}" {% if job_type == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="primary-button full-width">Run and Save FitCheck</button>
+    </form>
+  </section>
+
+  <div class="loading-overlay" id="loading-overlay" hidden>
+    <div class="loading-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="loading-message is-visible">Parsing job requirements...</p>
+      <p class="loading-message">Analyzing your background...</p>
+      <p class="loading-message">Calculating your fit score...</p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const form = document.getElementById("fit-form");
+    const overlay = document.getElementById("loading-overlay");
+    const messages = overlay ? Array.from(overlay.querySelectorAll(".loading-message")) : [];
+
+    if (form && overlay) {
+      form.addEventListener("submit", () => {
+        overlay.hidden = false;
+        let index = 0;
+
+        const intervalId = window.setInterval(() => {
+          messages.forEach((message, messageIndex) => {
+            message.classList.toggle("is-visible", messageIndex === index);
+          });
+          index += 1;
+          if (index >= messages.length) {
+            window.clearInterval(intervalId);
+          }
+        }, 1100);
+      });
+    }
+  </script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}FitCheck Workspace{% endblock %}
+
+{% block content %}
+  <section class="workspace-header">
+    <div>
+      <p class="eyebrow">Workspace</p>
+      <h1>{{ user.full_name.split(' ')[0] }}'s FitChecks</h1>
+      <p>
+        Save every role you analyze, compare where you are strong, and keep a real plan for what to do next.
+      </p>
+    </div>
+    <a href="{{ url_for('new_fitcheck') }}" class="primary-button">Start New FitCheck</a>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="card summary-card">
+      <h2>Your student screener</h2>
+      <div class="summary-pair"><span>University</span><strong>{{ screener.university }}</strong></div>
+      <div class="summary-pair"><span>Major</span><strong>{{ screener.major }}</strong></div>
+      <div class="summary-pair"><span>Year</span><strong>{{ screener.year }}</strong></div>
+      <div class="summary-pair"><span>Goal</span><strong>{{ screener.career_goals }}</strong></div>
+      <p class="summary-note">{{ screener.unsure_about }}</p>
+      <a href="{{ url_for('screener') }}" class="text-link">Edit screener</a>
+    </article>
+
+    <article class="card projects-card">
+      <div class="section-head">
+        <h2>Saved FitChecks</h2>
+        <span class="count-chip">{{ fitchecks|length }}</span>
+      </div>
+
+      {% if fitchecks %}
+        <div class="project-list">
+          {% for fitcheck in fitchecks %}
+            <a class="project-row" href="{{ url_for('fitcheck_detail', fitcheck_id=fitcheck.id) }}">
+              <div>
+                <strong>{{ fitcheck.title }}</strong>
+                <p>{{ fitcheck.company_hint if fitcheck.company_hint else fitcheck.job_type }}</p>
+              </div>
+              <div class="project-meta">
+                <span class="score-badge">{{ fitcheck.score }}/100</span>
+                <span class="fit-mini {{ fitcheck.fit_band|lower|replace(' ', '-') }}">{{ fitcheck.fit_band }}</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-card">
+          <h3>No saved FitChecks yet</h3>
+          <p>Start with one role you actually care about. FitCheck will save the analysis in this workspace.</p>
+          <a href="{{ url_for('new_fitcheck') }}" class="primary-button">Create Your First FitCheck</a>
+        </div>
+      {% endif %}
+    </article>
+  </section>
+{% endblock %}

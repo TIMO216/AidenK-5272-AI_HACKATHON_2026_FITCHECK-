@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}FitCheck Screener{% endblock %}
+
+{% block content %}
+  <section class="page-header">
+    <p class="eyebrow">Step 1</p>
+    <h1>Student screener</h1>
+    <p>Answer this once so every FitCheck can adjust the plan to your timeline, goals, and what you are unsure about.</p>
+  </section>
+
+  <section class="card form-card">
+    <form method="post" class="stack-form">
+      <div class="form-grid two-up">
+        <div class="field">
+          <label for="university">University</label>
+          <input id="university" name="university" type="text" value="{{ screener.university if screener else '' }}" required>
+        </div>
+        <div class="field">
+          <label for="major">Major</label>
+          <input id="major" name="major" type="text" value="{{ screener.major if screener else '' }}" required>
+        </div>
+      </div>
+      <div class="form-grid two-up">
+        <div class="field">
+          <label for="year">Year</label>
+          <select id="year" name="year" required>
+            {% for option in ["Freshman","Sophomore","Junior","Senior","Career Switcher"] %}
+              <option value="{{ option }}" {% if screener and screener.year == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="career_goals">Career Goals</label>
+          <input id="career_goals" name="career_goals" type="text" value="{{ screener.career_goals if screener else '' }}" placeholder="Data science internship, product role, research lab..." required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="unsure_about">What are you unsure about?</label>
+        <textarea id="unsure_about" name="unsure_about" rows="5" required>{{ screener.unsure_about if screener else '' }}</textarea>
+      </div>
+      <button type="submit" class="primary-button">Save Screener</button>
+    </form>
+  </section>
+{% endblock %}

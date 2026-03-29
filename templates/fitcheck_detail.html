@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}{{ fitcheck.title }} | FitCheck{% endblock %}
+
+{% block content %}
+  {% set score = result.overall_score %}
+  {% set strengths = result.strengths[:3] %}
+  {% set suggestions = result.suggestions[:3] %}
+  {% set fit_band = result.fit_band %}
+  {% if fit_band == "Strong Fit" %}
+    {% set fit_class = "fit-strong" %}
+  {% elif fit_band == "Moderate Fit" %}
+    {% set fit_class = "fit-moderate" %}
+  {% else %}
+    {% set fit_class = "fit-stretch" %}
+  {% endif %}
+
+  <section class="workspace-header">
+    <div>
+      <p class="eyebrow">Saved FitCheck</p>
+      <h1>{{ fitcheck.title }}</h1>
+      <p>{{ fitcheck.company_hint if fitcheck.company_hint else fitcheck.job_type }} · Saved {{ fitcheck.created_at }}</p>
+    </div>
+    <a href="{{ url_for('new_fitcheck') }}" class="primary-button">Start New FitCheck</a>
+  </section>
+
+  <section class="results-stack">
+    <section class="results-hero">
+      <div class="score-lockup">
+        <div class="score-label">Overall Score</div>
+        <div class="score-number">{{ result.overall_score }}<span>/100</span></div>
+      </div>
+      <div class="fit-pill {{ fit_class }}">{{ fit_band }}</div>
+      <div class="results-summary">
+        {% for line in result.coach_summary[:3] %}
+          <p>{{ line }}</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="category-row">
+      {% for category in result.categories %}
+        <article class="card category-card">
+          <p class="category-name">{{ category.label }}</p>
+          <div class="category-score">{{ category.score }}</div>
+          <p class="category-weight">Weight {{ category.weight }}%</p>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" style="width: {{ category.score }}%;"></div>
+          </div>
+          <p class="category-summary">{{ category.summary }}</p>
+        </article>
+      {% endfor %}
+    </section>
+
+    <section class="content-grid">
+      <div class="main-column">
+        <article class="card insight-card border-green">
+          <h2>Where You’re Strong</h2>
+          <ul class="insight-list">
+            {% for strength in strengths %}
+              <li>{{ strength }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+
+        <article class="card insight-card border-red">
+          <h2>What’s Missing</h2>
+          <ul class="gap-list">
+            {% for gap in result.top_gaps[:3] %}
+              <li class="gap-high">{{ gap }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+
+        <article class="card insight-card border-teal">
+          <h2>What To Do Next</h2>
+          <div class="suggestion-stack">
+            {% for suggestion in suggestions %}
+              <article class="suggestion-card">
+                <p><strong>{{ suggestion.title }}</strong></p>
+                <p>{{ suggestion.body }}</p>
+                <p class="resource-line">
+                  <span class="resource-label">Concrete next step:</span>
+                  {{ suggestion.resource if suggestion.resource else "Create one focused project, class example, or networking move that makes this gap visible and measurable on the page." }}
+                </p>
+              </article>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="card insight-card border-amber">
+          <h2>Are You Ready?</h2>
+          <p class="verdict-copy">
+            {% if score >= 80 %}
+              You’re ready. Apply. Focus on making the strongest proof easy to see.
+            {% elif score >= 60 %}
+              You’re close — one solid project or one stronger proof point could move this a lot.
+            {% else %}
+              You’re a stretch for this role right now, but this is fixable. Use the plan above and come back stronger.
+            {% endif %}
+          </p>
+        </article>
+      </div>
+
+      <aside class="side-column">
+        <article class="card summary-card">
+          <h2>FitCheck context</h2>
+          <div class="summary-pair"><span>Experience level</span><strong>{{ fitcheck.experience_level }}</strong></div>
+          <div class="summary-pair"><span>Job type</span><strong>{{ fitcheck.job_type }}</strong></div>
+          <div class="summary-pair"><span>Saved in workspace</span><strong>Yes</strong></div>
+        </article>
+      </aside>
+    </section>
+  </section>
+
+  <div
+    id="fitcheck-chat-context"
+    data-score="{{ result.overall_score }}"
+    data-fit-band="{{ fit_band }}"
+    data-experience-level="{{ fitcheck.experience_level }}"
+    data-job-type="{{ fitcheck.job_type }}"
+    data-gaps='{{ result.top_gaps | tojson }}'
+    data-ai-enabled="{{ 'true' if ai_enabled else 'false' }}"
+  ></div>
+
+  <section class="chat-widget" id="chat-widget">
+    <button class="chat-toggle" id="chat-toggle" type="button">Ask FitCheck</button>
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-header">Ask FitCheck</div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-message bot">
+          Ask about this role, your score, or what you should do next. I already know the context from this FitCheck.
+        </div>
+      </div>
+      <form class="chat-form" id="chat-form">
+        <textarea id="chat-input" class="chat-input" placeholder="Ask FitCheck..." rows="3" required></textarea>
+        <button type="submit" class="primary-button chat-submit">Send</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    const chatToggle = document.getElementById("chat-toggle");
+    const chatPanel = document.getElementById("chat-panel");
+    const chatForm = document.getElementById("chat-form");
+    const chatInput = document.getElementById("chat-input");
+    const chatMessages = document.getElementById("chat-messages");
+    const chatContextEl = document.getElementById("fitcheck-chat-context");
+
+    if (chatToggle && chatPanel) {
+      chatToggle.addEventListener("click", () => {
+        chatPanel.hidden = !chatPanel.hidden;
+      });
+    }
+
+    function appendChatMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = `chat-message ${role}`;
+      div.textContent = text;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    if (chatForm && chatInput && chatContextEl) {
+      chatForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const question = chatInput.value.trim();
+        if (!question) return;
+
+        appendChatMessage("user", question);
+        chatInput.value = "";
+
+        if (chatContextEl.dataset.aiEnabled !== "true") {
+          appendChatMessage("bot", "Ask FitCheck is not active yet because the OpenAI API key is missing in this environment.");
+          return;
+        }
+
+        appendChatMessage("bot", "Thinking...");
+
+        const gaps = JSON.parse(chatContextEl.dataset.gaps || "[]");
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question,
+              context: {
+                score: Number(chatContextEl.dataset.score || "0"),
+                fit_band: chatContextEl.dataset.fitBand || "Stretch",
+                experience_level: chatContextEl.dataset.experienceLevel || "Junior",
+                job_type: chatContextEl.dataset.jobType || "Other",
+                gaps,
+              },
+            }),
+          });
+          const data = await response.json();
+          chatMessages.removeChild(chatMessages.lastElementChild);
+          appendChatMessage("bot", data.answer || "I hit a snag trying to answer that. Try asking again in one sentence.");
+        } catch (error) {
+          if (chatMessages.lastElementChild) {
+            chatMessages.removeChild(chatMessages.lastElementChild);
+          }
+          appendChatMessage("bot", "I hit a snag trying to answer that. Try again in a moment.");
+        }
+      });
+    }
+  </script>
+{% endblock %}
