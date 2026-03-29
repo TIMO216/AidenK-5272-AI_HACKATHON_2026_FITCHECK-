@@ -211,25 +211,30 @@ class FitCheckAI:
             )
 
         try:
-            response = self.client.responses.create(
+            response = self.client.chat.completions.create(
                 model=MODEL_NAME,
-                instructions=FITCHECK_CHATBOT_SYSTEM_PROMPT,
-                input=prompt,
-                max_output_tokens=220,
+                messages=[
+                    {"role": "system", "content": FITCHECK_CHATBOT_SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=220,
             )
-            return (response.output_text or "").strip() or "I do not want to fake certainty here. Ask that one more time in one sentence and I will give you the clearest next move."
-        except Exception:
+            return (response.choices[0].message.content or "").strip() or "I do not want to fake certainty here. Ask that one more time in one sentence and I will give you the clearest next move."
+        except Exception as e:
+            print(f"Chat error: {e}")
             return "I hit a snag talking to the AI service just now. Your score still stands, and you can try the chat again in a moment."
 
     def _create_structured_response(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
-        response = self.client.responses.create(
+        response = self.client.chat.completions.create(
             model=MODEL_NAME,
-            instructions=FITCHECK_ANALYSIS_SYSTEM_PROMPT,
-            input=prompt,
-            text={"format": schema},
-            max_output_tokens=700,
+            messages=[
+                {"role": "system", "content": FITCHECK_ANALYSIS_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_schema", "json_schema": schema},
+            max_tokens=700,
         )
-        output_text = (response.output_text or "").strip()
+        output_text = (response.choices[0].message.content or "").strip()
         if not output_text:
             return {}
         try:
