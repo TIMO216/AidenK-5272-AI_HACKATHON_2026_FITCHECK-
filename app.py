@@ -13,11 +13,11 @@ from fitcheck.storage import (
     delete_fitcheck,
     get_fitcheck,
     get_or_create_user,
-    get_screener,
+    get_pathway_profile,
     get_user,
     init_db,
     list_fitchecks,
-    save_screener,
+    save_pathway_profile,
 )
 
 
@@ -90,11 +90,11 @@ def current_user():
     return get_user(int(user_id))
 
 
-def current_screener():
+def current_pathway_profile():
     user = current_user()
     if not user:
         return None
-    return get_screener(int(user["id"]))
+    return get_pathway_profile(int(user["id"]))
 
 
 def login_required(view_func):
@@ -107,13 +107,13 @@ def login_required(view_func):
     return wrapped_view
 
 
-def screener_required(view_func):
+def pathway_profile_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
         if current_user() is None:
             return redirect(url_for("login"))
-        if current_screener() is None:
-            return redirect(url_for("screener"))
+        if current_pathway_profile() is None:
+            return redirect(url_for("pathway_profile"))
         return view_func(*args, **kwargs)
 
     return wrapped_view
@@ -130,17 +130,40 @@ def infer_title(job_description: str) -> tuple[str, str]:
     return title, company_hint
 
 
-def plain_text_screener(screener_row) -> str:
-    if screener_row is None:
+def plain_text_pathway_profile(pathway_profile_row) -> str:
+    if pathway_profile_row is None:
         return ""
+    fields = [
+        ("University", pathway_profile_row["university"]),
+        ("Major", pathway_profile_row["major"]),
+        ("Year", pathway_profile_row["year"]),
+        ("Target roles", pathway_profile_row["target_roles"]),
+        ("Interests", pathway_profile_row["interests"]),
+        ("Certifications considering", pathway_profile_row["certifications_considering"]),
+        ("Personality", pathway_profile_row["personality_style"]),
+        ("Work style", pathway_profile_row["collaboration_style"]),
+        ("Task style", pathway_profile_row["task_style"]),
+        ("Confidence level", pathway_profile_row["confidence_level"]),
+        ("Where they feel confident", pathway_profile_row["confidence_environments"]),
+        ("Strengths", pathway_profile_row["strengths"]),
+        ("Concerns", pathway_profile_row["concerns"]),
+        ("What they wish they had guidance on", pathway_profile_row["guidance_needed"]),
+        ("What they are unsure about", pathway_profile_row["unsure_about"]),
+        ("Time constraints", pathway_profile_row["time_constraints"]),
+        ("Work commitments", pathway_profile_row["work_commitments"]),
+        ("Commute constraints", pathway_profile_row["commute_constraints"]),
+        ("Access constraints", pathway_profile_row["access_constraints"]),
+        ("Personal boundaries", pathway_profile_row["personal_boundaries"]),
+        ("Energy or workload limits", pathway_profile_row["energy_limits"]),
+        ("What they want this semester", pathway_profile_row["semester_goal"]),
+        ("What they want long-term", pathway_profile_row["long_term_goal"]),
+        ("What they have already tried", pathway_profile_row["already_tried"]),
+        ("What they are avoiding", pathway_profile_row["avoiding"]),
+        ("What they are proud of", pathway_profile_row["proud_of"]),
+        ("What progress looks like", pathway_profile_row["progress_definition"]),
+    ]
     return "\n".join(
-        [
-            f"University: {screener_row['university']}",
-            f"Major: {screener_row['major']}",
-            f"Year: {screener_row['year']}",
-            f"Career goals: {screener_row['career_goals']}",
-            f"What they feel unsure about: {screener_row['unsure_about']}",
-        ]
+        f"{label}: {value}" for label, value in fields if value
     )
 
 
@@ -199,7 +222,7 @@ def fallback_resubmit_suggestions(remaining_gaps: list[str], job_type: str) -> l
 
 def run_fitcheck_analysis(
     *,
-    screener_text: str,
+    pathway_profile_text: str,
     resume_text: str,
     job_description: str,
     experience_level: str,
@@ -226,7 +249,7 @@ def run_fitcheck_analysis(
     ai_summary = fitcheck_ai.generate_summary(
         final_score=result["overall_score"],
         fit_band=fit_band,
-        screener_text=screener_text,
+        pathway_profile_text=pathway_profile_text,
         experience_level=experience_level,
         top_gaps=result["top_gaps"],
         resubmit_context=resubmit_context,
@@ -238,7 +261,7 @@ def run_fitcheck_analysis(
         result = apply_green_light_state(result, job_type)
     else:
         ai_suggestions = fitcheck_ai.generate_suggestions(
-            screener_text=screener_text,
+            pathway_profile_text=pathway_profile_text,
             job_description=job_description,
             experience_level=experience_level,
             job_type=job_type,
@@ -266,13 +289,13 @@ def home():
     user = current_user()
     if user is None:
         return redirect(url_for("login"))
-    if current_screener() is None:
-        return redirect(url_for("screener"))
+    if current_pathway_profile() is None:
+        return redirect(url_for("pathway_profile"))
     return redirect(url_for("dashboard"))
 
 
 @app.route("/home")
-@screener_required
+@pathway_profile_required
 def workspace_home():
     return redirect(url_for("dashboard"))
 
@@ -301,8 +324,8 @@ def login():
         session["user_id"] = int(user["id"])
         session["name"] = full_name
         session["email"] = email.lower()
-        if get_screener(int(user["id"])) is None:
-            return redirect(url_for("screener"))
+        if get_pathway_profile(int(user["id"])) is None:
+            return redirect(url_for("pathway_profile"))
         return redirect(url_for("dashboard"))
 
     return render_template("login.html", errors=errors, form_values=form_values)
@@ -314,31 +337,52 @@ def logout():
     return redirect(url_for("login"))
 
 
-@app.route("/screener", methods=["GET", "POST"])
+@app.route("/pathway-profile", methods=["GET", "POST"])
 @login_required
-def screener():
-    existing = current_screener()
+def pathway_profile():
+    existing = current_pathway_profile()
     user = current_user()
 
     if request.method == "POST":
-        save_screener(
+        save_pathway_profile(
             int(user["id"]),
             university=request.form.get("university", ""),
             major=request.form.get("major", ""),
             year=request.form.get("year", ""),
-            career_goals=request.form.get("career_goals", ""),
+            target_roles=request.form.get("target_roles", ""),
+            interests=request.form.get("interests", ""),
+            certifications_considering=request.form.get("certifications_considering", ""),
+            personality_style=request.form.get("personality_style", ""),
+            collaboration_style=request.form.get("collaboration_style", ""),
+            task_style=request.form.get("task_style", ""),
+            confidence_level=request.form.get("confidence_level", ""),
+            confidence_environments=request.form.get("confidence_environments", ""),
+            strengths=request.form.get("strengths", ""),
+            concerns=request.form.get("concerns", ""),
+            guidance_needed=request.form.get("guidance_needed", ""),
             unsure_about=request.form.get("unsure_about", ""),
+            time_constraints=request.form.get("time_constraints", ""),
+            work_commitments=request.form.get("work_commitments", ""),
+            commute_constraints=request.form.get("commute_constraints", ""),
+            access_constraints=request.form.get("access_constraints", ""),
+            personal_boundaries=request.form.get("personal_boundaries", ""),
+            energy_limits=request.form.get("energy_limits", ""),
+            semester_goal=request.form.get("semester_goal", ""),
+            long_term_goal=request.form.get("long_term_goal", ""),
+            already_tried=request.form.get("already_tried", ""),
+            avoiding=request.form.get("avoiding", ""),
+            proud_of=request.form.get("proud_of", ""),
+            progress_definition=request.form.get("progress_definition", ""),
         )
         return redirect(url_for("dashboard"))
 
-    return render_template("screener.html", screener=existing)
-
+    return render_template("pathway_profile.html", pathway_profile=existing)
 
 @app.route("/dashboard")
-@screener_required
+@pathway_profile_required
 def dashboard():
     user = current_user()
-    screener = current_screener()
+    pathway_profile = current_pathway_profile()
     fitchecks = list_fitchecks(int(user["id"]))
 
     cards = []
@@ -361,21 +405,21 @@ def dashboard():
     return render_template(
         "dashboard.html",
         user=user,
-        screener=screener,
+        pathway_profile=pathway_profile,
         fitchecks=cards,
     )
 
 
 @app.route("/new", methods=["GET", "POST"])
-@screener_required
+@pathway_profile_required
 def new_fitcheck_alias():
     return new_fitcheck()
 
 
 @app.route("/fitchecks/new", methods=["GET", "POST"])
-@screener_required
+@pathway_profile_required
 def new_fitcheck():
-    screener = current_screener()
+    pathway_profile = current_pathway_profile()
     resume_text = ""
     job_description = ""
     job_type = "Software and Engineering"
@@ -384,7 +428,7 @@ def new_fitcheck():
         resume_text = request.form.get("resume_text", "").strip()
         job_description = request.form.get("job_description", "").strip()
         job_type = request.form.get("job_type", job_type)
-        experience_level = screener["year"]
+        experience_level = pathway_profile["year"]
         uploaded_resume = request.files.get("resume_pdf")
 
         if uploaded_resume and uploaded_resume.filename:
@@ -396,7 +440,7 @@ def new_fitcheck():
                     flash("We couldn't read this PDF. Please paste your resume instead.", "error")
                     return render_template(
                         "fitcheck_form.html",
-                        screener=screener,
+                        pathway_profile=pathway_profile,
                         resume_text=request.form.get("resume_text", ""),
                         job_description=job_description,
                         job_type=job_type,
@@ -405,7 +449,7 @@ def new_fitcheck():
                 flash("We couldn't read this PDF. Please paste your resume instead.", "error")
                 return render_template(
                     "fitcheck_form.html",
-                    screener=screener,
+                    pathway_profile=pathway_profile,
                     resume_text=request.form.get("resume_text", ""),
                     job_description=job_description,
                     job_type=job_type,
@@ -415,14 +459,14 @@ def new_fitcheck():
             flash("Add your resume and the job description before you run FitCheck.", "error")
             return render_template(
                 "fitcheck_form.html",
-                screener=screener,
+                pathway_profile=pathway_profile,
                 resume_text=resume_text,
                 job_description=job_description,
                 job_type=job_type,
             )
 
         result = run_fitcheck_analysis(
-            screener_text=plain_text_screener(screener),
+            pathway_profile_text=plain_text_pathway_profile(pathway_profile),
             resume_text=resume_text,
             job_description=job_description,
             experience_level=experience_level,
@@ -444,7 +488,7 @@ def new_fitcheck():
 
     return render_template(
         "fitcheck_form.html",
-        screener=screener,
+        pathway_profile=pathway_profile,
         resume_text=resume_text,
         job_description=job_description,
         job_type=job_type,
@@ -452,14 +496,14 @@ def new_fitcheck():
 
 
 @app.route("/delete/<int:fitcheck_id>", methods=["POST"])
-@screener_required
+@pathway_profile_required
 def delete_fitcheck_route(fitcheck_id: int):
     delete_fitcheck(int(current_user()["id"]), fitcheck_id)
     return redirect(url_for("workspace_home"))
 
 
 @app.route("/fitchecks/<int:fitcheck_id>")
-@screener_required
+@pathway_profile_required
 def fitcheck_detail(fitcheck_id: int):
     payload = get_fitcheck(int(current_user()["id"]), fitcheck_id)
     if payload is None:
@@ -477,14 +521,14 @@ def fitcheck_detail(fitcheck_id: int):
 
 
 @app.route("/fitchecks/<int:fitcheck_id>/resubmit", methods=["POST"])
-@screener_required
+@pathway_profile_required
 def resubmit_fitcheck(fitcheck_id: int):
     previous_fitcheck = get_fitcheck(int(current_user()["id"]), fitcheck_id)
     if previous_fitcheck is None:
         flash("That FitCheck could not be found.", "error")
         return redirect(url_for("dashboard"))
 
-    screener = current_screener()
+    pathway_profile = current_pathway_profile()
     resume_text = request.form.get("resume_text", "").strip()
     uploaded_resume = request.files.get("resume_pdf")
 
@@ -505,7 +549,7 @@ def resubmit_fitcheck(fitcheck_id: int):
         return redirect(url_for("fitcheck_detail", fitcheck_id=fitcheck_id))
 
     result = run_fitcheck_analysis(
-        screener_text=plain_text_screener(screener),
+        pathway_profile_text=plain_text_pathway_profile(pathway_profile),
         resume_text=resume_text,
         job_description=previous_fitcheck["job_description"],
         experience_level=previous_fitcheck["experience_level"],
@@ -528,13 +572,13 @@ def resubmit_fitcheck(fitcheck_id: int):
 
 
 @app.post("/api/chat")
-@screener_required
+@pathway_profile_required
 def chat():
     fitcheck_ai = get_fitcheck_ai()
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
     context = payload.get("context") or {}
-    screener = current_screener()
+    pathway_profile = current_pathway_profile()
     user = current_user()
 
     if not question:
@@ -542,7 +586,7 @@ def chat():
 
     answer = fitcheck_ai.answer_chat(
         question=question,
-        screener_text=plain_text_screener(screener),
+        pathway_profile_text=plain_text_pathway_profile(pathway_profile),
         student_name=user["full_name"] if user else "Student",
         score=int(context.get("score", 0)),
         fit_band=context.get("fit_band", "Stretch"),
@@ -559,7 +603,7 @@ def chat():
 def inject_layout_context():
     return {
         "current_user": current_user(),
-        "current_screener": current_screener(),
+        "current_pathway_profile": current_pathway_profile(),
     }
 
 

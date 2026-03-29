@@ -9,7 +9,7 @@
   {% set fit_band = result.fit_band %}
   {% set comparison = result.comparison if result.comparison else none %}
   {% set green_light = result.green_light if result.green_light else none %}
-  {% set screener = current_screener %}
+  {% set pathway_profile = current_pathway_profile %}
   {% if fit_band == "Strong Fit" %}
     {% set fit_class = "fit-strong" %}
   {% elif fit_band == "Moderate Fit" %}
@@ -155,7 +155,7 @@
           </article>
 
           <article class="card insight-card border-teal">
-            <h2>What To Do Next</h2>
+            <h2>What Makes Sense Next</h2>
             {% if suggestions %}
               <div class="suggestion-stack">
                 {% for suggestion in suggestions %}
@@ -163,7 +163,7 @@
                     <p><strong>{{ suggestion.title }}</strong></p>
                     <p>{{ suggestion.body }}</p>
                     <p class="resource-line">
-                      <span class="resource-label">Concrete next step:</span>
+                      <span class="resource-label">What would actually move you forward:</span>
                       {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
                     </p>
                   </article>
@@ -224,14 +224,14 @@
 
     <div class="mentor-panel-body">
       <section class="mentor-section">
-        <h3>Your screener</h3>
+        <h3>Your Pathway Profile</h3>
         <div class="mentor-summary-grid">
-          <div class="mentor-summary-item"><span>Major</span><strong>{{ screener.major if screener else "Not added yet" }}</strong></div>
-          <div class="mentor-summary-item"><span>Year</span><strong>{{ screener.year if screener else "Not added yet" }}</strong></div>
-          <div class="mentor-summary-item"><span>Goal</span><strong>{{ screener.career_goals if screener and screener.career_goals else "Still figuring it out" }}</strong></div>
+          <div class="mentor-summary-item"><span>Major</span><strong>{{ pathway_profile.major if pathway_profile else "Not added yet" }}</strong></div>
+          <div class="mentor-summary-item"><span>Year</span><strong>{{ pathway_profile.year if pathway_profile else "Not added yet" }}</strong></div>
+          <div class="mentor-summary-item"><span>Target roles</span><strong>{{ pathway_profile.target_roles if pathway_profile and pathway_profile.target_roles else "Still figuring it out" }}</strong></div>
         </div>
-        {% if screener and screener.unsure_about %}
-          <p class="mentor-note">{{ screener.unsure_about }}</p>
+        {% if pathway_profile and pathway_profile.unsure_about %}
+          <p class="mentor-note">{{ pathway_profile.unsure_about }}</p>
         {% endif %}
       </section>
 
@@ -264,7 +264,7 @@
         <h3>Chat</h3>
         <div class="chat-messages mentor-chat-messages" id="chat-messages">
           <div class="chat-message bot">
-            I've got your screener and this FitCheck in front of me. Ask what you actually want help with and I'll keep it real.
+            I've got your Pathway Profile and this FitCheck in front of me. Ask what you actually want help with and I'll keep it real.
           </div>
         </div>
         <form class="chat-form mentor-chat-form" id="chat-form">

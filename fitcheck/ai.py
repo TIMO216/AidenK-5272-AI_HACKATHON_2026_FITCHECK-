@@ -26,7 +26,7 @@ class FitCheckAI:
     def generate_suggestions(
         self,
         *,
-        screener_text: str,
+        pathway_profile_text: str,
         job_description: str,
         experience_level: str,
         job_type: str,
@@ -49,7 +49,7 @@ class FitCheckAI:
             "Do not use corporate language. Do not be mean. Do not be vague.\n"
             "Do not give editing advice, writing critique, or formatting suggestions.\n"
             "Do not sound like a checklist, task list, or productivity app.\n"
-            f"Student screener:\n{screener_text}\n"
+            f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
             f"Top rule-based gaps: {json.dumps(top_gaps)}\n"
@@ -108,7 +108,7 @@ class FitCheckAI:
         *,
         final_score: int,
         fit_band: str,
-        screener_text: str,
+        pathway_profile_text: str,
         experience_level: str,
         top_gaps: list[str],
         resubmit_context: dict[str, Any] | None = None,
@@ -123,7 +123,7 @@ class FitCheckAI:
             "Mention whether this student is strong, moderate, or a stretch for this role.\n"
             "Use their timing and experience level realistically.\n"
             "No corporate language.\n"
-            f"Student screener:\n{screener_text}\n"
+            f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Final score: {final_score}\n"
             f"Fit band: {fit_band}\n"
             f"Experience level: {experience_level}\n"
@@ -173,7 +173,7 @@ class FitCheckAI:
         self,
         *,
         question: str,
-        screener_text: str,
+        pathway_profile_text: str,
         student_name: str,
         score: int,
         fit_band: str,
@@ -188,7 +188,7 @@ class FitCheckAI:
 
         prompt = (
             "You are answering a student inside the Ask FitCheck chat widget.\n"
-            "You already know their screener, score, fit band, experience level, and gaps.\n"
+            "You already know their Pathway Profile, score, fit band, experience level, and gaps.\n"
             "Maximum 3 sentences.\n"
             "If the student is just being conversational, respond like a normal human mentor and do not give advice.\n"
             "Only give advice if they clearly ask for help, analysis, feedback, what to fix, or whether they should apply.\n"
@@ -197,7 +197,7 @@ class FitCheckAI:
             "Do not sound like a task list or productivity app.\n"
             "Offer direction, not assignments.\n"
             f"Student name: {student_name}\n"
-            f"Student screener:\n{screener_text}\n"
+            f"Student Pathway Profile:\n{pathway_profile_text}\n"
             f"Student score: {score}\n"
             f"Fit band: {fit_band}\n"
             f"Experience level: {experience_level}\n"
