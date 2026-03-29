@@ -4,106 +4,229 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FitCheck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   </head>
   <body>
+    {% set score = result.overall_score if result else none %}
+    {% set strengths = result.strengths[:3] if result else [] %}
+    {% set suggestions = result.suggestions[:3] if result else [] %}
+    {% if result and score >= 80 %}
+      {% set fit_band = "Strong Fit" %}
+      {% set fit_class = "fit-strong" %}
+      {% set summary_primary = "Your resume already reads like a credible match for this role, not just a partial overlap." %}
+      {% set summary_secondary = "The next step is less about closing major gaps and more about sharpening how clearly your strongest evidence appears to a recruiter." %}
+    {% elif result and score >= 60 %}
+      {% set fit_band = "Moderate Fit" %}
+      {% set fit_class = "fit-moderate" %}
+      {% set summary_primary = "You have real alignment with this role, but a hiring team would still see a few evidence gaps." %}
+      {% set summary_secondary = "You are not starting from zero, but stronger proof in the missing areas would materially improve your odds before you apply." %}
+    {% elif result %}
+      {% set fit_band = "Stretch" %}
+      {% set fit_class = "fit-stretch" %}
+      {% set summary_primary = "This role is currently a stretch based on the evidence shown in your resume." %}
+      {% set summary_secondary = "That does not mean the role is out of reach, but you likely need stronger role-specific proof before applying confidently." %}
+    {% endif %}
+
+    <nav class="site-nav">
+      <div class="nav-inner">
+        <div class="brand">FitCheck</div>
+        <div class="tagline">Know where you stand before you apply</div>
+      </div>
+    </nav>
+
     <main class="page-shell">
-      <section class="hero-card">
-        <p class="eyebrow">FitCheck MVP</p>
-        <h1>Score how well a student resume fits a job.</h1>
-        <p class="intro">
-          Paste a resume and a job description to get an evidence-based fit score across
-          Skills Match, Experience Relevance, Evidence Quality, and Role Specific Signals.
+      <section class="hero">
+        <h1>Know where you stand before you apply.</h1>
+        <p>
+          Paste your resume and a job description. Get a weighted fit score, an honest gap analysis,
+          and a specific plan to become a stronger candidate before you apply.
         </p>
       </section>
 
-      <section class="workspace">
-        <form method="post" class="input-panel">
-          <div class="field">
-            <label for="resume_text">Resume</label>
-            <textarea id="resume_text" name="resume_text" required>{{ resume_text }}</textarea>
+      <section class="card form-card">
+        <form method="post" class="fit-form" id="fit-form">
+          <div class="textarea-grid">
+            <div class="field">
+              <label for="resume_text">Resume</label>
+              <textarea id="resume_text" name="resume_text" required>{{ resume_text }}</textarea>
+            </div>
+            <div class="field">
+              <label for="job_description">Job Description</label>
+              <textarea id="job_description" name="job_description" required>{{ job_description }}</textarea>
+            </div>
           </div>
-          <div class="field">
-            <label for="job_description">Job Description</label>
-            <textarea id="job_description" name="job_description" required>{{ job_description }}</textarea>
+
+          <div class="select-grid">
+            <div class="field">
+              <label for="experience_level">Experience Level</label>
+              <select id="experience_level" name="experience_level">
+                <option {% if request.form.get('experience_level', '') == 'Freshman' %}selected{% endif %}>Freshman</option>
+                <option {% if request.form.get('experience_level', '') == 'Sophomore' %}selected{% endif %}>Sophomore</option>
+                <option {% if request.form.get('experience_level', '') == 'Junior' %}selected{% endif %}>Junior</option>
+                <option {% if request.form.get('experience_level', '') == 'Senior' %}selected{% endif %}>Senior</option>
+                <option {% if request.form.get('experience_level', '') == 'Career Switcher' %}selected{% endif %}>Career Switcher</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="job_type">Job Type</label>
+              <select id="job_type" name="job_type">
+                <option {% if request.form.get('job_type', '') == 'Data and Analytics' %}selected{% endif %}>Data and Analytics</option>
+                <option {% if request.form.get('job_type', '') == 'Software and Engineering' %}selected{% endif %}>Software and Engineering</option>
+                <option {% if request.form.get('job_type', '') == 'HR and People' %}selected{% endif %}>HR and People</option>
+                <option {% if request.form.get('job_type', '') == 'Business and Operations' %}selected{% endif %}>Business and Operations</option>
+                <option {% if request.form.get('job_type', '') == 'Marketing and Communications' %}selected{% endif %}>Marketing and Communications</option>
+                <option {% if request.form.get('job_type', '') == 'Research and Science' %}selected{% endif %}>Research and Science</option>
+                <option {% if request.form.get('job_type', '') == 'Other' %}selected{% endif %}>Other</option>
+              </select>
+            </div>
           </div>
-          <button type="submit" class="primary-button">Run FitCheck</button>
+
+          <button type="submit" class="primary-button full-width">Analyze My Fit</button>
         </form>
+      </section>
 
-        <section class="results-panel">
-          {% if result %}
-            <div class="score-card">
-              <p class="score-label">Overall Fit Score</p>
-              <div class="score-value">{{ result.overall_score }}</div>
-              <p class="score-scale">out of 100</p>
+      {% if result %}
+        <section class="results-stack">
+          <section class="results-hero">
+            <div class="score-lockup">
+              <div class="score-label">Overall Score</div>
+              <div class="score-number">{{ result.overall_score }}<span>/100</span></div>
             </div>
-
-            <div class="requirement-card">
-              <h2>Top Job Signals</h2>
-              <div class="chip-row">
-                {% for requirement in result.top_requirements %}
-                  <span class="chip">{{ requirement }}</span>
-                {% endfor %}
-              </div>
+            <div class="fit-pill {{ fit_class }}">{{ fit_band }}</div>
+            <div class="results-summary">
+              <p>{{ summary_primary }}</p>
+              <p>{{ summary_secondary }}</p>
             </div>
+          </section>
 
-            <div class="category-grid">
-              {% for category in result.categories %}
-                <article class="category-card">
-                  <div class="category-topline">
-                    <h3>{{ category.label }}</h3>
-                    <span>{{ category.score }}/100</span>
-                  </div>
-                  <p class="weight">Weight {{ category.weight }}%</p>
-                  <p class="summary">{{ category.summary }}</p>
-                  {% if category.details %}
-                    <ul class="detail-list">
-                      {% for detail in category.details %}
-                        <li>
-                          <strong>{{ detail.skill }}</strong>
-                          <span class="detail-strength">{{ detail.strength }}%</span>
-                          <p>{{ detail.evidence }}</p>
-                        </li>
-                      {% endfor %}
-                    </ul>
-                  {% endif %}
-                </article>
-              {% endfor %}
-            </div>
+          <section class="category-row">
+            {% for category in result.categories %}
+              <article class="card category-card">
+                <p class="category-name">{{ category.label }}</p>
+                <div class="category-score">{{ category.score }}</div>
+                <p class="category-weight">Weight {{ category.weight }}%</p>
+                <div class="progress-track" aria-hidden="true">
+                  <div class="progress-fill" style="width: {{ category.score }}%;"></div>
+                </div>
+                <p class="category-summary">{{ category.summary }}</p>
+              </article>
+            {% endfor %}
+          </section>
 
-            <div class="insight-grid">
-              <article class="panel-card">
+          <section class="content-grid">
+            <div class="main-column">
+              <article class="card insight-card border-green">
                 <h2>What Is Working</h2>
-                <ul class="plain-list">
-                  {% for strength in result.strengths %}
+                <ul class="insight-list">
+                  {% for strength in strengths %}
                     <li>{{ strength }}</li>
                   {% endfor %}
                 </ul>
               </article>
 
-              <article class="panel-card">
-                <h2>Targeted Suggestions</h2>
-                <ul class="suggestion-list">
-                  {% for suggestion in result.suggestions %}
-                    <li>
-                      <div class="suggestion-head">
-                        <strong>{{ suggestion.title }}</strong>
-                        <span class="priority">{{ suggestion.priority }}</span>
-                      </div>
-                      <p>{{ suggestion.body }}</p>
-                    </li>
-                  {% endfor %}
-                </ul>
+              {% if score >= 80 %}
+                <article class="card strong-candidate-card">
+                  <div class="strong-icon" aria-hidden="true">&#10003;</div>
+                  <div>
+                    <h2>You are a strong candidate for this role.</h2>
+                    <ul class="insight-list">
+                      <li>Lead with the two most role-relevant bullets near the top of your resume so a recruiter sees fit within seconds.</li>
+                      <li>Tailor your summary and top project language to mirror the exact responsibilities in the job description.</li>
+                      <li>Apply soon, then prepare two short stories that prove your strongest technical and collaborative examples.</li>
+                    </ul>
+                  </div>
+                </article>
+              {% else %}
+                <article class="card insight-card {% if suggestions and suggestions[0].priority == 'High' %}border-red{% else %}border-amber{% endif %}">
+                  <h2>Gaps</h2>
+                  <ul class="gap-list">
+                    {% for suggestion in suggestions %}
+                      <li class="{% if suggestion.priority == 'High' %}gap-high{% else %}gap-medium{% endif %}">
+                        {{ suggestion.title }} is not yet supported strongly enough in the resume evidence.
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </article>
+
+                <article class="card insight-card border-teal">
+                  <h2>Suggestions</h2>
+                  <div class="suggestion-stack">
+                    {% for suggestion in suggestions %}
+                      {% set skill_name = suggestion.title.replace('Strengthen evidence for ', '') %}
+                      <article class="suggestion-card">
+                        <p><strong>{{ skill_name }}</strong></p>
+                        <p>{{ suggestion.body }}</p>
+                        <p class="resource-line">
+                          <span class="resource-label">Concrete next step:</span>
+                          {% if 'Python' in skill_name or 'Flask' in skill_name or 'API' in skill_name or 'SQL' in skill_name or 'Postgresql' in skill_name %}
+                            Build a small portfolio project tied to this job, such as an internal dashboard, workflow tool, or API-backed app, and add one quantified bullet from it.
+                          {% elif 'Dashboard' in skill_name or 'Analytics' in skill_name or 'Data' in skill_name %}
+                            Create a short analysis project with a dashboard and a one-page writeup that shows a decision your work supports.
+                          {% elif 'Stakeholder' in skill_name or 'Presentation' in skill_name or 'Documentation' in skill_name %}
+                            Turn a recent class, internship, or campus project into a concise case study that shows your communication and decision-making impact.
+                          {% else %}
+                            Create one focused project, class example, or internship bullet that makes this requirement visible and measurable on the page.
+                          {% endif %}
+                        </p>
+                      </article>
+                    {% endfor %}
+                  </div>
+                </article>
+              {% endif %}
+            </div>
+
+            <aside class="side-column">
+              <article class="card insight-card border-amber">
+                <h2>Bias Awareness</h2>
+                <p class="bias-copy">
+                  Fit scores can help surface missing evidence, but they cannot fully measure context, grit, learning velocity,
+                  or the uneven access students have had to internships, mentorship, and branded experiences.
+                </p>
+                <p class="bias-copy">
+                  Use this as a decision-support tool, not a verdict. A lower score should guide what to strengthen next, not define your potential.
+                </p>
               </article>
-            </div>
-          {% else %}
-            <div class="empty-state">
-              <h2>Ready for a fit check</h2>
-              <p>The sample resume and job description are preloaded so you can test the app immediately.</p>
-            </div>
-          {% endif %}
+
+              <a href="/" class="primary-button action-link">Analyze Another Role</a>
+            </aside>
+          </section>
         </section>
-      </section>
+      {% endif %}
     </main>
+
+    <div class="loading-overlay" id="loading-overlay" hidden>
+      <div class="loading-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-message is-visible">Parsing job requirements...</p>
+        <p class="loading-message">Analyzing your background...</p>
+        <p class="loading-message">Calculating your fit score...</p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("fit-form");
+      const overlay = document.getElementById("loading-overlay");
+      const messages = overlay ? Array.from(overlay.querySelectorAll(".loading-message")) : [];
+
+      if (form && overlay) {
+        form.addEventListener("submit", () => {
+          overlay.hidden = false;
+          let index = 0;
+
+          const intervalId = window.setInterval(() => {
+            messages.forEach((message, messageIndex) => {
+              message.classList.toggle("is-visible", messageIndex === index);
+            });
+            index += 1;
+            if (index >= messages.length) {
+              window.clearInterval(intervalId);
+            }
+          }, 1100);
+        });
+      }
+    </script>
   </body>
 </html>
