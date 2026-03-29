@@ -46,6 +46,7 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS fitchecks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
+            parent_fitcheck_id INTEGER,
             title TEXT NOT NULL,
             company_hint TEXT,
             experience_level TEXT,
@@ -54,13 +55,23 @@ def init_db() -> None:
             job_description TEXT NOT NULL,
             result_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(id)
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            FOREIGN KEY(parent_fitcheck_id) REFERENCES fitchecks(id)
         )
         """
     )
 
+    ensure_column(cursor, "fitchecks", "parent_fitcheck_id", "INTEGER")
+
     connection.commit()
     connection.close()
+
+
+def ensure_column(cursor: sqlite3.Cursor, table_name: str, column_name: str, definition: str) -> None:
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = {row[1] for row in cursor.fetchall()}
+    if column_name not in columns:
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
 def get_or_create_user(full_name: str, email: str) -> sqlite3.Row:
@@ -132,6 +143,7 @@ def get_screener(user_id: int) -> Optional[sqlite3.Row]:
 def create_fitcheck(
     user_id: int,
     *,
+    parent_fitcheck_id: Optional[int] = None,
     title: str,
     company_hint: str,
     experience_level: str,
@@ -146,6 +158,7 @@ def create_fitcheck(
         """
         INSERT INTO fitchecks (
             user_id,
+            parent_fitcheck_id,
             title,
             company_hint,
             experience_level,
@@ -153,10 +166,11 @@ def create_fitcheck(
             resume_text,
             job_description,
             result_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             user_id,
+            parent_fitcheck_id,
             title.strip(),
             company_hint.strip(),
             experience_level.strip(),

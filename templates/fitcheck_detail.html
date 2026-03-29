@@ -7,6 +7,8 @@
   {% set strengths = result.strengths[:3] %}
   {% set suggestions = result.suggestions[:3] %}
   {% set fit_band = result.fit_band %}
+  {% set comparison = result.comparison if result.comparison else none %}
+  {% set green_light = result.green_light if result.green_light else none %}
   {% set screener = current_screener %}
   {% if fit_band == "Strong Fit" %}
     {% set fit_class = "fit-strong" %}
@@ -22,9 +24,12 @@
       <h1>{{ fitcheck.title }}</h1>
       <p>{{ fitcheck.company_hint if fitcheck.company_hint else fitcheck.job_type }} | Saved {{ fitcheck.created_at }}</p>
     </div>
-    <div class="workspace-actions">
+    <div class="workspace-actions workspace-actions-stacked">
       <button class="primary-button" id="mentor-panel-toggle" type="button" aria-expanded="false" aria-controls="mentor-panel">
         Ask FitCheck
+      </button>
+      <button class="secondary-button" id="resubmit-toggle" type="button" aria-expanded="false" aria-controls="resubmit-panel">
+        Resubmit for Review
       </button>
     </div>
   </section>
@@ -42,6 +47,62 @@
         {% endfor %}
       </div>
     </section>
+
+    <section class="card resubmit-panel" id="resubmit-panel" hidden>
+      <div class="section-head">
+        <h2>Professional Resubmit</h2>
+      </div>
+      <p class="muted-copy">
+        Submit your updated version here. FitCheck will compare it to the last one, recognize what got better, and only tell you what still matters.
+      </p>
+      <form method="post" action="{{ url_for('resubmit_fitcheck', fitcheck_id=fitcheck.id) }}" enctype="multipart/form-data" class="fit-form">
+        <div class="form-grid two-up">
+          <div class="field">
+            <label for="resume_pdf">Upload updated PDF</label>
+            <input id="resume_pdf" name="resume_pdf" type="file" accept="application/pdf">
+            <p class="helper-copy">Upload a PDF, or paste updated text below. If you do both, we'll use the PDF.</p>
+          </div>
+          <div class="field">
+            <label for="resume_text">Paste updated text</label>
+            <textarea id="resume_text" name="resume_text" rows="10" placeholder="Paste your updated version here."></textarea>
+          </div>
+        </div>
+        <button type="submit" class="primary-button">Submit Updated Version</button>
+      </form>
+    </section>
+
+    {% if comparison %}
+      <section class="comparison-grid">
+        <article class="card insight-card border-green">
+          <h2>What you improved</h2>
+          <ul class="insight-list">
+            {% for item in comparison.what_improved %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+        <article class="card insight-card border-teal">
+          <h2>What changed</h2>
+          <ul class="insight-list">
+            {% for item in comparison.what_changed %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </article>
+        <article class="card insight-card {% if comparison.whats_left %}border-amber{% else %}border-green{% endif %}">
+          <h2>What's left{% if not comparison.whats_left %} (if anything){% endif %}</h2>
+          {% if comparison.whats_left %}
+            <ul class="gap-list">
+              {% for item in comparison.whats_left %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="verdict-copy">You cleared the meaningful concerns from the last round. This is the point where FitCheck stops nitpicking.</p>
+          {% endif %}
+        </article>
+      </section>
+    {% endif %}
 
     <section class="category-row">
       {% for category in result.categories %}
@@ -68,40 +129,61 @@
           </ul>
         </article>
 
-        <article class="card insight-card border-red">
-          <h2>What's Missing</h2>
-          <ul class="gap-list">
-            {% for gap in result.top_gaps[:3] %}
-              <li class="gap-high">{{ gap }}</li>
-            {% endfor %}
-          </ul>
-        </article>
+        {% if green_light %}
+          <article class="card insight-card border-green green-light-card">
+            <h2>Green Light</h2>
+            <p class="green-light-message">{{ green_light.message }}</p>
+            <p class="verdict-copy">{{ green_light.body }}</p>
+            <ul class="insight-list">
+              {% for tip in green_light.tips %}
+                <li>{{ tip }}</li>
+              {% endfor %}
+            </ul>
+          </article>
+        {% else %}
+          <article class="card insight-card border-red">
+            <h2>What's Missing</h2>
+            {% if result.top_gaps %}
+              <ul class="gap-list">
+                {% for gap in result.top_gaps[:2] %}
+                  <li class="gap-high">{{ gap }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="verdict-copy">You handled the main concerns from the last round. At this point, keep your energy on applying well instead of trying to chase tiny improvements.</p>
+            {% endif %}
+          </article>
 
-        <article class="card insight-card border-teal">
-          <h2>What To Do Next</h2>
-          <div class="suggestion-stack">
-            {% for suggestion in suggestions %}
-              <article class="suggestion-card">
-                <p><strong>{{ suggestion.title }}</strong></p>
-                <p>{{ suggestion.body }}</p>
-                <p class="resource-line">
-                  <span class="resource-label">Concrete next step:</span>
-                  {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
-                </p>
-              </article>
-            {% endfor %}
-          </div>
-        </article>
+          <article class="card insight-card border-teal">
+            <h2>What To Do Next</h2>
+            {% if suggestions %}
+              <div class="suggestion-stack">
+                {% for suggestion in suggestions %}
+                  <article class="suggestion-card">
+                    <p><strong>{{ suggestion.title }}</strong></p>
+                    <p>{{ suggestion.body }}</p>
+                    <p class="resource-line">
+                      <span class="resource-label">Concrete next step:</span>
+                      {{ suggestion.resource if suggestion.resource else "Choose one focused next move that helps you build real proof in this area." }}
+                    </p>
+                  </article>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="verdict-copy">You do not need a whole new round of criticism here. Focus on applying thoughtfully and talking clearly about what you already improved.</p>
+            {% endif %}
+          </article>
+        {% endif %}
 
         <article class="card insight-card border-amber">
           <h2>Are You Ready?</h2>
           <p class="verdict-copy">
-            {% if score >= 80 %}
-              You're ready. Apply. Focus on making your strongest proof easy to talk about when someone asks.
+            {% if green_light %}
+              You're competitive now. Stop editing in circles and put that energy into applying well.
             {% elif score >= 60 %}
-              You're close. One strong piece of proof in the right place could move this a lot.
+              You're close. Focus on the last one or two things that still matter and leave the rest alone.
             {% else %}
-              You're a stretch for this role right now, but this is fixable. Use the plan above and come back stronger.
+              You're a stretch for this role right now, but the path is clearer now. Keep it focused and sustainable.
             {% endif %}
           </p>
         </article>
@@ -127,6 +209,7 @@
     data-job-type="{{ fitcheck.job_type }}"
     data-gaps='{{ result.top_gaps | tojson }}'
     data-summary-lines='{{ result.coach_summary[:3] | tojson }}'
+    data-comparison='{{ comparison | tojson if comparison else "null" }}'
     data-ai-enabled="{{ 'true' if ai_enabled else 'false' }}"
   ></div>
 
@@ -166,6 +249,17 @@
         </div>
       </section>
 
+      {% if comparison %}
+        <section class="mentor-section">
+          <h3>Resubmit progress</h3>
+          <div class="mentor-result-summary">
+            {% for item in comparison.what_improved %}
+              <p>{{ item }}</p>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
       <section class="mentor-section mentor-chat-section">
         <h3>Chat</h3>
         <div class="chat-messages mentor-chat-messages" id="chat-messages">
@@ -187,6 +281,8 @@
     const panelToggle = document.getElementById("mentor-panel-toggle");
     const panelClose = document.getElementById("mentor-panel-close");
     const mentorPanel = document.getElementById("mentor-panel");
+    const resubmitToggle = document.getElementById("resubmit-toggle");
+    const resubmitPanel = document.getElementById("resubmit-panel");
     const chatForm = document.getElementById("chat-form");
     const chatInput = document.getElementById("chat-input");
     const chatMessages = document.getElementById("chat-messages");
@@ -207,6 +303,14 @@
 
     if (panelClose) {
       panelClose.addEventListener("click", () => setPanelOpenState(false));
+    }
+
+    if (resubmitToggle && resubmitPanel) {
+      resubmitToggle.addEventListener("click", () => {
+        const nextHidden = !resubmitPanel.hidden;
+        resubmitPanel.hidden = nextHidden;
+        resubmitToggle.setAttribute("aria-expanded", nextHidden ? "false" : "true");
+      });
     }
 
     function appendChatMessage(role, text) {
@@ -235,6 +339,7 @@
 
         const gaps = JSON.parse(chatContextEl.dataset.gaps || "[]");
         const summaryLines = JSON.parse(chatContextEl.dataset.summaryLines || "[]");
+        const comparison = JSON.parse(chatContextEl.dataset.comparison || "null");
 
         try {
           const response = await fetch("/api/chat", {
@@ -249,6 +354,7 @@
                 job_type: chatContextEl.dataset.jobType || "Other",
                 gaps,
                 summary_lines: summaryLines,
+                comparison,
               },
             }),
           });

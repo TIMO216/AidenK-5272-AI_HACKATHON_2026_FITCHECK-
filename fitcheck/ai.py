@@ -31,26 +31,40 @@ class FitCheckAI:
         experience_level: str,
         job_type: str,
         top_gaps: list[str],
+        resubmit_context: dict[str, Any] | None = None,
     ) -> list[dict[str, str]]:
         if not self.enabled:
             return []
 
+        target_count = 3 if not resubmit_context else max(1, min(2, len(top_gaps) or 1))
         prompt = (
             "You are generating the Suggestions section for FitCheck.\n"
             "Use the FitCheck voice exactly.\n"
-            "Write exactly 3 suggestions.\n"
+            f"Write exactly {target_count} suggestions.\n"
             "Each suggestion must include:\n"
             "- a short skill or gap label\n"
             "- one honest mentor-style action tied to this student's situation\n"
-            "- one concrete project, networking, professor outreach, lab, or portfolio next step\n"
+            "- one concrete project, networking, professor outreach, lab, certification, campus resource, or portfolio next step\n"
             "Reference the actual job description language where relevant.\n"
             "Do not use corporate language. Do not be mean. Do not be vague.\n"
+            "Do not give resume-editing advice.\n"
             f"Student screener:\n{screener_text}\n"
             f"Experience level: {experience_level}\n"
             f"Job type: {job_type}\n"
             f"Top rule-based gaps: {json.dumps(top_gaps)}\n"
             f"Job description:\n{job_description}"
         )
+        if resubmit_context:
+            prompt += (
+                "\nThis is a resubmission.\n"
+                f"What changed: {json.dumps(resubmit_context.get('what_changed', []))}\n"
+                f"What improved: {json.dumps(resubmit_context.get('what_improved', []))}\n"
+                f"What's left: {json.dumps(resubmit_context.get('whats_left', []))}\n"
+                "Acknowledge progress.\n"
+                "Do not repeat old advice that was already addressed.\n"
+                "Do not invent new flaws.\n"
+                "Focus only on the 1 to 2 remaining meaningful gaps.\n"
+            )
 
         schema = {
             "type": "json_schema",
@@ -62,8 +76,8 @@ class FitCheckAI:
                 "properties": {
                     "suggestions": {
                         "type": "array",
-                        "minItems": 3,
-                        "maxItems": 3,
+                        "minItems": target_count,
+                        "maxItems": target_count,
                         "items": {
                             "type": "object",
                             "additionalProperties": False,
@@ -95,6 +109,7 @@ class FitCheckAI:
         screener_text: str,
         experience_level: str,
         top_gaps: list[str],
+        resubmit_context: dict[str, Any] | None = None,
     ) -> list[str]:
         if not self.enabled:
             return []
@@ -112,6 +127,18 @@ class FitCheckAI:
             f"Experience level: {experience_level}\n"
             f"Top gaps: {json.dumps(top_gaps)}"
         )
+        if resubmit_context:
+            prompt += (
+                "\nThis is a resubmission.\n"
+                f"Previous score: {resubmit_context.get('previous_score', 0)}\n"
+                f"What changed: {json.dumps(resubmit_context.get('what_changed', []))}\n"
+                f"What improved: {json.dumps(resubmit_context.get('what_improved', []))}\n"
+                f"What's left: {json.dumps(resubmit_context.get('whats_left', []))}\n"
+                "Acknowledge improvements clearly.\n"
+                "Do not repeat old advice.\n"
+                "Do not invent new flaws.\n"
+                "If the student is now competitive, say so and stop criticizing.\n"
+            )
 
         schema = {
             "type": "json_schema",
@@ -151,6 +178,7 @@ class FitCheckAI:
         job_type: str,
         gaps: list[str],
         summary_lines: list[str],
+        comparison: dict[str, Any] | None = None,
     ) -> str:
         if not self.enabled:
             return "FitCheck chat is not available yet because the OpenAI API key is not configured."
@@ -172,6 +200,15 @@ class FitCheckAI:
             f"FitCheck summary: {json.dumps(summary_lines)}\n"
             f"Student question: {question}"
         )
+        if comparison:
+            prompt += (
+                "\nThis student resubmitted.\n"
+                f"What changed: {json.dumps(comparison.get('what_changed', []))}\n"
+                f"What improved: {json.dumps(comparison.get('what_improved', []))}\n"
+                f"What's left: {json.dumps(comparison.get('whats_left', []))}\n"
+                "Encourage healthy progress.\n"
+                "Avoid perfectionism, overwork, or endless editing.\n"
+            )
 
         try:
             response = self.client.responses.create(

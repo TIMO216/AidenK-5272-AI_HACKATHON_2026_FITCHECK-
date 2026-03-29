@@ -252,6 +252,21 @@ textarea:focus {
   box-shadow: 0 10px 24px rgba(27, 43, 75, 0.18);
 }
 
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 18px;
+  border: 1px solid rgba(27, 43, 75, 0.14);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--navy);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .full-width {
   width: 100%;
 }
@@ -321,6 +336,12 @@ textarea:focus {
 .workspace-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.workspace-actions-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
 }
 
 .count-chip {
@@ -515,6 +536,27 @@ textarea:focus {
 
 .results-summary p + p {
   margin-top: 10px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.resubmit-panel[hidden] {
+  display: none;
+}
+
+.green-light-card {
+  background: linear-gradient(180deg, #f7fff9 0%, #ffffff 100%);
+}
+
+.green-light-message {
+  margin: 0 0 10px;
+  color: var(--green);
+  font-size: 1.15rem;
+  font-weight: 800;
 }
 
 .category-row {
@@ -864,7 +906,8 @@ textarea:focus {
   .content-grid,
   .form-grid.two-up,
   .results-hero,
-  .category-row {
+  .category-row,
+  .comparison-grid {
     grid-template-columns: 1fr;
   }
 
@@ -915,5 +958,9 @@ textarea:focus {
 
   .workspace-actions {
     justify-content: start;
+  }
+
+  .workspace-actions-stacked {
+    align-items: stretch;
   }
 }

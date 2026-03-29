@@ -6,6 +6,7 @@ import pdfplumber
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 
 from fitcheck.ai import FitCheckAI
+from fitcheck.review import build_resubmit_comparison
 from fitcheck.scoring import analyze_fit
 from fitcheck.storage import (
     create_fitcheck,
@@ -143,6 +144,59 @@ def plain_text_screener(screener_row) -> str:
     )
 
 
+def green_light_tips(job_type: str) -> list[str]:
+    tips_by_job_type = {
+        "Data and Analytics": [
+            "Apply now and be ready to talk through one analysis from start to finish.",
+            "Bring one clean project or notebook link that shows how you think with data.",
+            "Practice explaining your findings in plain English, not just tool names.",
+        ],
+        "Software and Engineering": [
+            "Apply now and be ready to explain one project decision clearly in interviews.",
+            "Keep one code sample or project walkthrough ready so you can talk through how it works.",
+            "Focus on clear, calm storytelling about what you built and why it mattered.",
+        ],
+        "Research and Science": [
+            "Apply now and be ready to explain one method, one result, and one thing you learned.",
+            "Reach out to one professor or mentor who can vouch for how you work.",
+            "Keep a short project or lab summary ready in case someone asks about your process.",
+        ],
+    }
+    return tips_by_job_type.get(
+        job_type,
+        [
+            "Apply now and be ready to explain your strongest example clearly.",
+            "Keep one focused story ready about how you solved a real problem.",
+            "Let your confidence come from real preparation, not endless last-minute edits.",
+        ],
+    )
+
+
+def apply_green_light_state(result: dict, job_type: str) -> dict:
+    result["top_gaps"] = []
+    result["suggestions"] = []
+    result["green_light"] = {
+        "message": "You are competitive for this role.",
+        "body": "This is the point where FitCheck stops critiquing and tells you to go apply.",
+        "tips": green_light_tips(job_type),
+    }
+    return result
+
+
+def fallback_resubmit_suggestions(remaining_gaps: list[str], job_type: str) -> list[dict]:
+    suggestions = []
+    for gap in remaining_gaps[:2]:
+        suggestions.append(
+            {
+                "title": gap,
+                "body": f"This is still one of the last meaningful things holding you back for {job_type.lower()} roles. Keep your next move focused and realistic.",
+                "resource": "Pick one concrete action this week that gives you stronger proof here without overloading yourself.",
+                "priority": "High",
+            }
+        )
+    return suggestions
+
+
 def run_fitcheck_analysis(
     *,
     screener_text: str,
@@ -150,6 +204,7 @@ def run_fitcheck_analysis(
     job_description: str,
     experience_level: str,
     job_type: str,
+    previous_fitcheck: dict | None = None,
 ) -> dict:
     fitcheck_ai = get_fitcheck_ai()
     result = analyze_fit(
@@ -161,33 +216,47 @@ def run_fitcheck_analysis(
     fit_band = fit_band_for_score(result["overall_score"])
     result["fit_band"] = fit_band
 
+    resubmit_context = None
+    if previous_fitcheck is not None:
+        comparison = build_resubmit_comparison(previous_fitcheck, result, resume_text)
+        result["comparison"] = comparison
+        result["top_gaps"] = comparison["whats_left"]
+        resubmit_context = comparison
+
     ai_summary = fitcheck_ai.generate_summary(
         final_score=result["overall_score"],
         fit_band=fit_band,
         screener_text=screener_text,
         experience_level=experience_level,
         top_gaps=result["top_gaps"],
+        resubmit_context=resubmit_context,
     )
     if ai_summary:
         result["coach_summary"] = ai_summary
 
-    ai_suggestions = fitcheck_ai.generate_suggestions(
-        screener_text=screener_text,
-        job_description=job_description,
-        experience_level=experience_level,
-        job_type=job_type,
-        top_gaps=result["top_gaps"],
-    )
-    if ai_suggestions:
-        result["suggestions"] = [
-            {
-                "title": item["title"],
-                "body": item["body"],
-                "resource": item["resource"],
-                "priority": "High",
-            }
-            for item in ai_suggestions
-        ]
+    if previous_fitcheck is not None and result["overall_score"] >= 80:
+        result = apply_green_light_state(result, job_type)
+    else:
+        ai_suggestions = fitcheck_ai.generate_suggestions(
+            screener_text=screener_text,
+            job_description=job_description,
+            experience_level=experience_level,
+            job_type=job_type,
+            top_gaps=result["top_gaps"],
+            resubmit_context=resubmit_context,
+        )
+        if ai_suggestions:
+            result["suggestions"] = [
+                {
+                    "title": item["title"],
+                    "body": item["body"],
+                    "resource": item["resource"],
+                    "priority": "High",
+                }
+                for item in ai_suggestions
+            ]
+        elif previous_fitcheck is not None:
+            result["suggestions"] = fallback_resubmit_suggestions(result["top_gaps"], job_type)
 
     return result
 
@@ -362,6 +431,7 @@ def new_fitcheck():
         title, company_hint = infer_title(job_description)
         fitcheck_id = create_fitcheck(
             int(current_user()["id"]),
+            parent_fitcheck_id=None,
             title=title,
             company_hint=company_hint,
             experience_level=experience_level,
@@ -406,6 +476,57 @@ def fitcheck_detail(fitcheck_id: int):
     )
 
 
+@app.route("/fitchecks/<int:fitcheck_id>/resubmit", methods=["POST"])
+@screener_required
+def resubmit_fitcheck(fitcheck_id: int):
+    previous_fitcheck = get_fitcheck(int(current_user()["id"]), fitcheck_id)
+    if previous_fitcheck is None:
+        flash("That FitCheck could not be found.", "error")
+        return redirect(url_for("dashboard"))
+
+    screener = current_screener()
+    resume_text = request.form.get("resume_text", "").strip()
+    uploaded_resume = request.files.get("resume_pdf")
+
+    if uploaded_resume and uploaded_resume.filename:
+        try:
+            extracted_text = extract_resume_text_from_pdf(uploaded_resume)
+            if extracted_text:
+                resume_text = extracted_text
+            else:
+                flash("We couldn't read this PDF. Please paste your resume instead.", "error")
+                return redirect(url_for("fitcheck_detail", fitcheck_id=fitcheck_id))
+        except Exception:
+            flash("We couldn't read this PDF. Please paste your resume instead.", "error")
+            return redirect(url_for("fitcheck_detail", fitcheck_id=fitcheck_id))
+
+    if not resume_text:
+        flash("Add your updated resume before you resubmit.", "error")
+        return redirect(url_for("fitcheck_detail", fitcheck_id=fitcheck_id))
+
+    result = run_fitcheck_analysis(
+        screener_text=plain_text_screener(screener),
+        resume_text=resume_text,
+        job_description=previous_fitcheck["job_description"],
+        experience_level=previous_fitcheck["experience_level"],
+        job_type=previous_fitcheck["job_type"],
+        previous_fitcheck=previous_fitcheck,
+    )
+
+    new_fitcheck_id = create_fitcheck(
+        int(current_user()["id"]),
+        parent_fitcheck_id=fitcheck_id,
+        title=previous_fitcheck["title"],
+        company_hint=previous_fitcheck["company_hint"],
+        experience_level=previous_fitcheck["experience_level"],
+        job_type=previous_fitcheck["job_type"],
+        resume_text=resume_text,
+        job_description=previous_fitcheck["job_description"],
+        result=result,
+    )
+    return redirect(url_for("fitcheck_detail", fitcheck_id=new_fitcheck_id))
+
+
 @app.post("/api/chat")
 @screener_required
 def chat():
@@ -429,6 +550,7 @@ def chat():
         job_type=context.get("job_type", "Other"),
         gaps=context.get("gaps", []),
         summary_lines=context.get("summary_lines", []),
+        comparison=context.get("comparison"),
     )
     return jsonify({"answer": answer})
 
